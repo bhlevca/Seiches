@@ -1,0 +1,3 @@
+1) Longer time series give more accurate results in the frequency domain
+2) Windowing with with a Hann or Hamm window can reduce the spectral spread in the Fourier / frequency space, but it does no help with wavelets.
+3) The seiche structure depends on wind and stratification
