@@ -51,8 +51,8 @@ class Embayment(object):
                 dt_s = (Time[2] - Time[1]) * factor  # Sampling period [s]
                 samp_rate = 1.0 / dt_s
                 btype = 'band'
-                # y, w, h, b, a = fft_utils.filters.butterworth(SensorDepth, btype, lowcut, highcut, samp_rate, order = N)
-                y = fft_utils.filters.fft_bandpassfilter(SensorDepth, samp_rate, lowcut, highcut)
+                # y = fft_utils.filters.fft_bandpassfilter(SensorDepth, samp_rate, lowcut, highcut)
+                y, w, h, N = fft_utils.filters.butterworth(SensorDepth, btype, lowcut, highcut, samp_rate)
                 SensorDepth = y
             # end if filtered
 
@@ -480,7 +480,7 @@ if __name__ == '__main__':
     ftype = 'fft'
     # ftype = 'butter' THIS DOES NOT WORK PROPERLY for the random signal we have here
     if doFiltering:
-        filter = Filter.Filter(doFiltering, ftype, lowcutoff, highcutoff, btype)
+        filter = Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
     else:
         filter = None
 

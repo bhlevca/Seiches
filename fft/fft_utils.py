@@ -745,8 +745,8 @@ if __name__ == '__main__':
     # btype = 'high'
     # btype = 'low'
 
-    y, w, h, b, a = filters.butterworth(x, btype, lowcut, highcut, samp_rate, order = N)
-    y1 = filters.fft_bandpassfilter(x, samp_rate, lowcut, highcut)
+    y, w, h, b, a = filters.butterworth(x, btype, lowcut, highcut, samp_rate)
+    # y1 = filters.fft_bandpassfilter(x, samp_rate, lowcut, highcut)
 
     # filtered output
     fig.add_subplot(235)

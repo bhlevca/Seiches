@@ -7,7 +7,7 @@ import filters
 
 class Filter(object):
 
-    def __init__(self, doFiltering = None, ftype = 'fft', lowcutoff = None, highcutoff = None, btype = 'band', order = 5):
+    def __init__(self, doFiltering = None, lowcutoff = None, highcutoff = None, btype = 'band', order = 5):
         '''
         Constructor
         '''
@@ -16,7 +16,6 @@ class Filter(object):
         self.highcutoff = highcutoff
         self.btype = btype
         self.order = order
-        self.ftype = ftype
 
     def butter_bandpass(self, fs, order = 5):
         if order != None:
@@ -39,18 +38,10 @@ class Filter(object):
             ord = self.order
         return filters.butter_lowpass(self.lowcutoff, fs, ord)
 
-    def butterworth(self, data, fs, order = 5, worN = 2000):
+    def butterworth(self, data, fs):
         # returns [y, w, h, b, a]
-        if order != None:
-            ord = order
-        else:
-            ord = self.order
         if self.doFilter:
-            if self.ftype == 'fft':
-                y = filters.fft_bandpassfilter(data, fs, self.lowcutoff, self.highcutoff)
-                return [y, None, None, None, None]
-            else:
-                return filters.butterworth(data, self.btype, lowcut = self.lowcutoff, highcut = self.highcutoff, fs = fs, order = ord, worN = worN)
-
+            y, w, h, N = filters.butterworth(data, self.btype, self.lowcutoff, self.highcutoff, fs)
+            return [y, w, h, N, None]
         else:
             return [data, None, None, None, None]
