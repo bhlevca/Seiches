@@ -483,7 +483,7 @@ def dof(freq):
 
         dof Sj is only a two degrees of freedom estimate of Sigma, there should be considerable variability Sj function
         '''
-    dof = 2  # Not valid here. This which would be for the wholde timeseries dof=len(freq) - 2
+    dof = len(freq) - 2  # was = 2 - for each point of the FFT
     return dof
 
 
@@ -555,7 +555,7 @@ def confidence_interval(data, dof, p_val):
     chib = (stats.chi2.ppf(1 - p_val, dof))  # typically 0.975
     b = dof / chib * data
 
-    return (a, b)
+    return (b, a)
 
 if __name__ == '__main__':
 

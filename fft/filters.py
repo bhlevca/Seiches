@@ -4,7 +4,7 @@ from scipy.signal import freqz
 import math
 import fft_utils
 
-def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', debug = False):
+def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', passatten = 10, stopatten = 30, order = None, recurse = False, orders = None, recdepth = 0, debug = False):
     '''
      This function does butterworth filtering.
 
@@ -46,17 +46,76 @@ def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', debug = False):
     nqf = fs / 2.0
     ws = [lowcut / nqf, highcut / nqf]
     wp = [lowcut * 0.90 / nqf, highcut * 1.1 / nqf]
-    (N, Wn) = sp.signal.buttord(wp = wp, ws = ws, gpass = 5, gstop = 30, analog = 0)
+
+
+    if order == None:
+        (N, Wn) = sp.signal.buttord(wp = wp, ws = ws, gpass = passatten, gstop = stopatten, analog = 0)
+        if N > 8 : N = 11
+    else:
+        N = order
+        Wn = wp
+
+    width = (Wn[1] * nqf - Wn[0] * nqf)
+    ratio = nqf / width
+    if nqf / width > 200 and recdepth == 0 :  # decimate
+        data = sp.signal.decimate(data, int(ratio / 200), n = 5, ftype = 'iir')
+        # data = sp.signal.resample(data, len(data) / int(ratio / 200))
+
+        fs = fs / int(ratio / 200)
+        nqf = fs / 2.0
+        ws = [lowcut / nqf, highcut / nqf]
+        wp = [lowcut * 0.90 / nqf, highcut * 1.1 / nqf]
+        Wn = wp
+        width = (Wn[1] * nqf - Wn[0] * nqf)
+
+
+    if recurse:
+        if  recdepth == 0:
+            step = 2
+            orders = [  step if N - int(step * i / step) > step  else N - step * i / step   for i in range(0, N, step) ]
+            N = orders[0]
+
+    if debug:
+        print " ============= DEBUG ============ "
+        print "cuttoff [%f - %f] hours" % ((1 / (Wn[0] * nqf)) / 3600, (1 / (Wn[1] * nqf)) / 3600)
+        print "order = %d" % N
+        print "nyq = %f" % nqf
+        print "filter width: %f" % (width)
+
+
+    if N > 8:
+        print "Order of filter:%d to big to be stable, change parameters" % N
+        # N = 8
+    elif N < 2:
+        print "Order of filter:%d to small to be precise, change parameters" % N
+        # N = 2
+
+
+
+    # If some values of b are too close to 0, they are removed. In that case, a :
+    # BadCoefficients warning is emitted.
     if output == 'zpk':
         (z, p, k) = sp.signal.butter(N, Wn, btype = btype, analog = 0, output = 'zpk')
+
+        if debug:
+            print "Printing zeros:\n==============="
+            for i in range(0, len(z)):
+                print 'z[%d]=' % i + ' ({0.real:.3f} + {0.imag:.7f}j)'.format(z[i])
+            print "Printing poles:\n==============="
+            for i in range(0, len(p)):
+                print 'p[%d]=' % i + ' ({0.real:.3f} + {0.imag:.7f}j)'.format(p[i])
+
+            print "Printing Gain\n==============="
+            print "k=%f" % (k)
         b, a = sp.signal.zpk2tf(z, p, k)
+
     elif output == 'ba':
         (b, a) = sp.signal.butter(N, Wn, btype = btype, analog = 0, output = 'ba')
+        (z, p, k) = sp.signal.tf2zpk(b, a)
     else:
         err = "Butterworth: Unknown output type %s" % output
         raise BaseException(err)
 
-    # b *= 1e3
     if debug == True:
         print("b=" + str(b) + ", a=" + str(a))
 
@@ -69,6 +128,12 @@ def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', debug = False):
     # (y, zi) = signal.lfilter(b, a, x, zi=zi)
     y = sp.signal.filtfilt(b, a, data)
     delay = 0
+
+    if recurse:
+        depth = recdepth + 1
+        if depth < len(orders):
+            (y, w, h, N, delay) = butterworth(data, btype, lowcut, highcut, fs, output, passatten, stopatten, order = orders[depth], recurse = recurse, orders = orders, recdepth = depth, debug = debug)
+
     return (y, w, h, N, delay)
 
 
