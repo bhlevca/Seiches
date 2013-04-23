@@ -50,7 +50,7 @@ def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', passatten = 10,
 
     if order == None:
         (N, Wn) = sp.signal.buttord(wp = wp, ws = ws, gpass = passatten, gstop = stopatten, analog = 0)
-        if N > 8 : N = 11
+        if N > 8 : N = 10
     else:
         N = order
         Wn = wp
@@ -84,10 +84,10 @@ def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', passatten = 10,
 
 
     if N > 8:
-        print "Order of filter:%d to big to be stable, change parameters" % N
+        print "Order of filter:%d too big to be stable, change parameters" % N
         # N = 8
     elif N < 2:
-        print "Order of filter:%d to small to be precise, change parameters" % N
+        print "Order of filter:%d too small to be precise, change parameters" % N
         # N = 2
 
 

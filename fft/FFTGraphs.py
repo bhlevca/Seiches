@@ -15,15 +15,22 @@ class FFTGraphs(object):
     classdocs
     '''
 
-    def __init__(self, path, file1, file2, show, tunits):
+    def __init__(self, path = None, file1 = None, file2 = None, show = None, data = None):
         '''
         Constructor
         '''
-        self.path_in = path
-        self.filename = file1
-        self.filename1 = file2
+        if path != None and file1 != None:
+            self.path_in = path
+            self.filename = file1
+            self.filename1 = file2
+            self.fftsa = FFTSpectralAnalysis.FFTSpectralAnalysis(path, file1, file2)
+        elif data != None:
+            self.path_in = None
+            self.filename = None
+            self.filename1 = None
+            self.fftsa = FFTSpectralAnalysis.FFTSpectralAnalysis(None, None, None, data)
+
         self.show = show
-        self.fftsa = FFTSpectralAnalysis.FFTSpectralAnalysis(path, file1, file2, tunits)
         self.mx = None  # Amplitude values from spectral analysis Lake
         self.mx1 = None  # Amplitude values from spectral analysis Lake
         self.y = None  # Lake levels
@@ -43,48 +50,58 @@ class FFTGraphs(object):
         self.x05_1 = None  # 5% conf level bay
         self.x95_1 = None  # 95% conf level bay
         self.num_segments = 1
+        self.data = data
     # end
 
-    def doSpectralAnalysis(self, showOrig, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None):
+    def doSpectralAnalysis(self, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None):
 
         self.num_segments = num_segments
 
-        [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierAnalysis(self.filename, showOrig, tunits, window, num_segments, filter)
-        if self.filename1 != None:
-            [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = self.fftsa.FourierAnalysis(self.filename1, showOrig, tunits, window, num_segments, filter)
-            eps = (self.Time[1] - self.Time[0]) / 100
+        if self.filename != None:
+            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierAnalysis(self.filename, showOrig, tunits, window, num_segments, filter)
+            if self.filename1 != None:
+                [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = self.fftsa.FourierAnalysis(self.filename1, showOrig, tunits, window, num_segments, filter)
+                eps = (self.Time[1] - self.Time[0]) / 100
 
-            # resample to be the same as first only if needed
-            if (self.Time[1] - self.Time[0]) - (self.Time1[1] - self.Time1[0]) > eps:
-                SensorDepth = sp.signal.resample(self.y1, len(self.Time))
+                # resample to be the same as first only if needed
+                if (self.Time[1] - self.Time[0]) - (self.Time1[1] - self.Time1[0]) > eps:
+                    SensorDepth = sp.signal.resample(self.y1, len(self.Time))
 
-                # redo the analysis withthe resampled data  #filter must be None here to prevent another filtering
-                if num_segments == 1:
-                    [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
-                    self.fftsa.fourierTSAnalysis(self.Time, SensorDepth, self.show, self.fftsa.tunits, window, num_segments, None)
+                    # redo the analysis withthe resampled data  #filter must be None here to prevent another filtering
+                    if num_segments == 1:
+                        [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
+                        self.fftsa.fourierTSAnalysis(self.Time, SensorDepth, self.show, tunits, window, num_segments, None)
+                    else:
+                        [f1, avg_fftx, avg_amplit, avg_power, x05, x95] = \
+                          fftsa.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, filter)
+                        self.fftx1 = avg_fftx
+                        self.mx1 = avg_amplit
+                        self.f1 = f1
+                        self.power1 = avg_power
+                        self.x05_1 = x05
+                        self.x95_1 = x95
+
                 else:
-                    [f1, avg_fftx, avg_amplit, avg_power, x05, x95] = \
-                      fftsa.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, self.tunits, window, num_segments, filter)
-                    self.fftx1 = avg_fftx
-                    self.mx1 = avg_amplit
-                    self.f1 = f1
-                    self.power1 = avg_power
-                    self.x05_1 = x05
-                    self.x95_1 = x95
-
-            else:
-                SensorDepth = self.y1
+                    SensorDepth = self.y1
+                # end if
             # end if
-        # end if
+        elif self.data != None:
+            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierDataAnalysis(self.data, showOrig, draw, tunits, window, num_segments, filter)
+        else:
+            raise Exception("Both filename and data are missing ")
+
         return [self.Time, self.y, self.x05, self.x95]
     # end doSpectralAnalysis
 
-    def plotLakeLevels(self, lake_name, bay_name, detrend = False):
+    def plotLakeLevels(self, lake_name, bay_name, detrend = False, y_label = None, title = None):
         if self.show :
             # plot the original Lake oscillation input
             L = len(self.Time)
             xlabel = 'Time [days]'
-            ylabel = 'Detrended Z(t) [m]'
+            if y_label == None:
+                ylabel = 'Detrended Z(t) [m]'
+            else :
+                ylabel = y_label
             if self.filename1 != None:
                 xa = np.array([self.Time, self.Time])
                 if detrend:
@@ -105,19 +122,22 @@ class FFTGraphs(object):
             else:
                 xa = np.array([self.Time])
                 ya = np.array([self.y])
-                legend = ['lake']
+                legend = [lake_name]
 
 
             # end
-
-            fft_utils.plot_n_TimeSeries("Detrended Lake Levels", xlabel, ylabel, xa, ya, legend)
+            if title == None:
+                title = "Detrended Lake Levels"
+            else:
+                title = title + " - time series"
+            fft_utils.plot_n_TimeSeries(title, xlabel, ylabel, xa, ya, legend)
 
         # end if
     # end plotLakeLevels
 
 
 
-    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz"):
+    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -133,7 +153,11 @@ class FFTGraphs(object):
 
         if self.show:
             # Plot single - sided amplitude spectrum.
-            title = 'Single-Sided Amplitude spectrum vs freq'
+            if title == None:
+                title = 'Single-Sided Amplitude spectrum vs freq'
+            else:
+                title = title + " - Single-Sided Amplitude"
+
             if funits == 'Hz':
                 xlabel = 'Frequency (Hz)'
                 f = self.f
@@ -142,7 +166,10 @@ class FFTGraphs(object):
                 f = self.f * 3600
             # end if
 
-            ylabel = '|Z(t)| [m]'
+            if y_label == None:
+                ylabel = '|Z(t)| [m]'
+            else :
+                ylabel = y_label
 
             if self.filename1 != None:
                 xa = np.array([f, f])
@@ -166,7 +193,7 @@ class FFTGraphs(object):
 
     # end plotSingleSideAplitudeSpectrumFreq
 
-    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name):
+    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, ymax_lim = None):
         sSeries = fft_utils.smoothSeries(self.mx, 5)
         if self.filename1 != None:
             sSeries1 = fft_utils.smoothSeries(self.mx1, 5);
@@ -174,9 +201,15 @@ class FFTGraphs(object):
 
         if self.show:
             # Plot single - sided amplitude spectrum.
-            title = 'Single-Sided Amplitude spectrum vs time [h]'
+            if title == None:
+                title = 'Single-Sided Amplitude spectrum vs time [h]'
+            else:
+                title = title + " - Single-Sided Amplitude"
             xlabel = 'Time (h)'
-            ylabel = '|Z(t)| [m]'
+            if y_label == None:
+                ylabel = '|Z(t)| [m]'
+            else :
+                ylabel = y_label
             if self.filename1 != None:
                 tph = (1 / self.f) / 3600
                 tph1 = (1 / self.f1) / 3600
@@ -187,9 +220,9 @@ class FFTGraphs(object):
                 tph = (1 / self.f) / 3600
                 xa = np.array([tph])
                 ya = np.array([sSeries])
-                legend = ['lake']
+                legend = [lake_name]
             # end
-            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, ymax_lim = 0.04)
+            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, ymax_lim)
     # end plotSingleSideAplitudeSpectrumTime
 
     def plotZoomedSingleSideAplitudeSpectrumFreq(self):
