@@ -208,7 +208,7 @@ def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6):
         plt.show()
     # end
 
-def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None):
+def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None, log = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -218,7 +218,10 @@ def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth =
     for a in x_arr:
         x = x_arr[i]
         y = y_arr[i]
-        ax.plot(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i)
+        if log:
+            ax.loglog(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i, basex = 10)
+        else:
+            ax.plot(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i)
         i += 1
     # end for
 
@@ -238,7 +241,13 @@ def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth =
     plt.show()
 # end
 
-def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.6, ymax_lim = None):
+def errorbar(ax, x0, y0, ci, color):
+    ax.loglog([x0, x0], [y0 * ci[0], y0 * ci[1]], color = color)
+    ax.loglog(x0, y0, 'bo')
+    ax.loglog(x0, y0 * ci[0], 'b_')
+    ax.loglog(x0, y0 * ci[1], 'b_')
+
+def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.6, ymax_lim = None, log = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -248,19 +257,33 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     for a in x_arr:
         x = x_arr[i]
         y = y_arr[i]
-        ax.plot(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i)
+        if log:
+            ax.loglog(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i, basex = 10)
+        else:
+            ax.plot(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i)
         i += 1
     # end for
 
     # plot the confidence intervals
     i = 0
     for a in x_arr:
-        x = x_arr[i]
-        y1 = ci05[i]
-        y2 = ci95[i]
-        sd = 0.5 + i * 0.2
-        ax.plot(x, y1, x, y2, linestyle = '-', color = [sd, sd, sd], linewidth = 1.)
-        ax.fill_between(x, y1, y2, where = y2 <= y1, facecolor = [sd, sd, sd], interpolate = True)
+        if log:
+            x = a
+            y1 = ci05[0]
+            y2 = ci95[0]
+            y0 = max(y_arr[0]) * 2 / 3
+            # Choose a locatioon for the CI bar
+            ax.set_yscale('log')
+            # yerr = (y2 - y1) / 2.0
+            # ax.errorbar(a[150], y0, xerr = None, yerr = yerr)
+            errorbar(ax, a[100], y0, [y1, y2], color = 'b')
+
+        else:
+            y1 = ci05[i]
+            y2 = ci95[i]
+            sd = 0.5 + i * 0.2
+            ax.plot(x, y1, x, y2, linestyle = '-', color = [sd, sd, sd], linewidth = 1.2)
+            ax.fill_between(x, y1, y2, where = y2 <= y1, facecolor = [sd, sd, sd], interpolate = True)
         i += 1
 
     # ax.xaxis.grid(True, 'major')
@@ -519,7 +542,7 @@ def edof(data, N, M, window_type):
         Other windows can be supported and other percents of overlapping
     '''
     windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman', 'flattop']
-    # number of blocks for a 50% overlap
+    # number of blocks for a 50% overlap  N/M is the number of distinct segments
     nb = 2 * N / M - 1
 
     if not window_type in windows:
@@ -529,9 +552,9 @@ def edof(data, N, M, window_type):
 
     return dof
 
-def confidence_interval(data, dof, p_val):
+def confidence_interval(data, dof, p_val, log = False):
     '''
-    NOTE: the confidence interval is calcuate for EACH frequency of the spectrum in the frequency domain
+    NOTE: the confidence interval is calculated for EACH frequency of the spectrum in the frequency domain
     =====================================================================================================
 
     a() and b() are the 0.025 and 0.975% points of the X^2 distribution with v
@@ -550,12 +573,21 @@ def confidence_interval(data, dof, p_val):
     p_val = p / 2.
 
     chia = (stats.chi2.ppf(p_val, dof))  # typically 0.025
-    a = dof / chia * data
+    a = dof / chia
 
     chib = (stats.chi2.ppf(1 - p_val, dof))  # typically 0.975
-    b = dof / chib * data
+    b = dof / chib
+
+    if not log:
+        a *= data
+        b *= data
+
+    # alternate calculations
+    # ci = 1. / [(1 - 2. / (9 * dof) + 1.96 * math.sqrt(2. / (9 * dof))) ** 3, (1 - 2. / (9 * dof) - 1.96 * math.sqrt(2. / (9 * dof))) ** 3]
 
     return (b, a)
+
+
 
 if __name__ == '__main__':
 

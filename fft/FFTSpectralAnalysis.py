@@ -108,19 +108,22 @@ class FFTSpectralAnalysis(object):
 
     # end
 
-    def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None):
+    def FourierDataAnalysisLog(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None):
+        return self.FourierDataAnalysis(data, showOrig, draw, tunits = tunits, window = window, num_segments = num_segments, filter = filter, log = True)
+
+    def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False):
 
         Time, SensorDepth = data
         x05 = None
         x95 = None
 
-        if Time[0] < 695056:
+        if Time[1] < 695056:
             Time += 695056
 
         if num_segments == 1:
             [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)  # , window, filter)
         else:
-            [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments)
+            [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
             fftx = avg_fftx
             mx = avg_amplit
             power = avg_power
@@ -131,7 +134,8 @@ class FFTSpectralAnalysis(object):
 
         return [y, Time, fftx, NumUniquePts, mx, f, power, x05, x95]
 
-    def fourierTSAnalysis(self, Time, SensorDepth, draw = 'True', tunits = 'sec', window = None):  # , filter = None):
+
+    def fourierTSAnalysis(self, Time, SensorDepth, draw = 'True', tunits = 'sec', window = None, log = False):  # , filter = None):
         '''
         Clearly, it is difficult to identify the frequency components from looking at this signal;
         that's why spectral analysis is so popular.
@@ -310,7 +314,8 @@ class FFTSpectralAnalysis(object):
     #===============================================================================
     #
     #===============================================================================
-    def WelchFourierAnalysis_overlap50pct(self, Time, SensorDepth, draw = False, tunits = "sec", window = 'hanning', nseg = 1):
+
+    def WelchFourierAnalysis_overlap50pct(self, Time, SensorDepth, draw = False, tunits = "sec", window = 'hanning', nseg = 1, log = False):
         '''
             @param nseg: number of non overlapping segments. In calculation the total number of 50% overlapping segments K = N/M = 2*nseg-1
             @param Time : the time points
@@ -344,7 +349,7 @@ class FFTSpectralAnalysis(object):
         # perform FFT
         y = np.zeros((den - 1, M), dtype = np.float)  # data segments
         Tm = np.zeros((den - 1, M), dtype = np.float)  # time segments
-        fftx = np.zeros((den - 1, M), dtype = np.complex)  # trnsform segments
+        fftx = np.zeros((den - 1, M), dtype = np.complex)  # transform segments
         NumUniquePts = np.zeros(den - 1)  # point segments
         amplit = np.zeros((den - 1, M / 2 + 1), dtype = np.float)  # amplit segments
         f = np.zeros((den - 1, M / 2 + 1), dtype = np.float)  # freq segments
@@ -372,7 +377,8 @@ class FFTSpectralAnalysis(object):
         interval_len = len(Time) / nseg
         data_len = len(Time)
         edof = fft_utils.edof(avg_amplit, data_len, interval_len, window)  # one dt chunk see Hartman Notes ATM 552 page 159 example
-        (x05, x95) = fft_utils.confidence_interval(avg_amplit, edof, 0.95)
+
+        (x05, x95) = fft_utils.confidence_interval(avg_amplit, edof, 0.95, log)
 
         return [f[0], avg_fftx, avg_amplit, avg_power, x05, x95]
 

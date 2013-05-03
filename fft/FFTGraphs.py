@@ -93,6 +93,47 @@ class FFTGraphs(object):
         return [self.Time, self.y, self.x05, self.x95]
     # end doSpectralAnalysis
 
+    def doLogSpectralAnalysis(self, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None):
+
+        self.num_segments = num_segments
+
+        if self.filename != None:
+            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierAnalysisLog(self.filename, showOrig, tunits, window, num_segments, filter)
+            if self.filename1 != None:
+                [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = self.fftsa.FourierAnalysisLog(self.filename1, showOrig, tunits, window, num_segments, filter)
+                eps = (self.Time[1] - self.Time[0]) / 100
+
+                # resample to be the same as first only if needed
+                if (self.Time[1] - self.Time[0]) - (self.Time1[1] - self.Time1[0]) > eps:
+                    SensorDepth = sp.signal.resample(self.y1, len(self.Time))
+
+                    # redo the analysis with the resampled data  #filter must be None here to prevent another filtering
+                    if num_segments == 1:
+                        [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
+                        self.fftsa.fourierTSAnalysisLog(self.Time, SensorDepth, self.show, tunits, window, num_segments, None)
+                    else:
+                        [f1, avg_fftx, avg_amplit, avg_power, x05, x95] = \
+                          fftsa.WelchFourierAnalysisLog_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, filter)
+                        self.fftx1 = avg_fftx
+                        self.mx1 = avg_amplit
+                        self.f1 = f1
+                        self.power1 = avg_power
+                        self.x05_1 = x05
+                        self.x95_1 = x95
+
+                else:
+                    SensorDepth = self.y1
+                # end if
+            # end if
+        elif self.data != None:
+            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierDataAnalysisLog(self.data, showOrig, draw, tunits, window, num_segments, filter)
+        else:
+            raise Exception("Both filename and data are missing ")
+
+        return [self.Time, self.y, self.x05, self.x95]
+    # end doSpectralAnalysis
+
+
     def plotLakeLevels(self, lake_name, bay_name, detrend = False, y_label = None, title = None):
         if self.show :
             # plot the original Lake oscillation input
@@ -136,8 +177,10 @@ class FFTGraphs(object):
     # end plotLakeLevels
 
 
+    def plotLogSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None):
+        return self.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = True)
 
-    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None):
+    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -187,13 +230,16 @@ class FFTGraphs(object):
                     ci95 = [self.x95]
             # end
             if self.num_segments == 1:
-                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend)
+                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log)
             else:
-                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend)
+                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, log = log)
 
     # end plotSingleSideAplitudeSpectrumFreq
 
-    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, ymax_lim = None):
+    def plotLogSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, ymax_lim = None):
+        return self.plotSingleSideAplitudeSpectrumTime(lake_name, bay_name, y_label = None, title = None, ymax_lim = None, log = True)
+
+    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, ymax_lim = None, log = False):
         sSeries = fft_utils.smoothSeries(self.mx, 5)
         if self.filename1 != None:
             sSeries1 = fft_utils.smoothSeries(self.mx1, 5);
@@ -222,7 +268,7 @@ class FFTGraphs(object):
                 ya = np.array([sSeries])
                 legend = [lake_name]
             # end
-            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, ymax_lim)
+            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, ymax_lim, log)
     # end plotSingleSideAplitudeSpectrumTime
 
     def plotZoomedSingleSideAplitudeSpectrumFreq(self):
