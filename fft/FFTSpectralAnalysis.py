@@ -108,9 +108,6 @@ class FFTSpectralAnalysis(object):
 
     # end
 
-    def FourierDataAnalysisLog(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None):
-        return self.FourierDataAnalysis(data, showOrig, draw, tunits = tunits, window = window, num_segments = num_segments, filter = filter, log = True)
-
     def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False):
 
         Time, SensorDepth = data

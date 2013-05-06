@@ -271,13 +271,13 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
             x = a
             y1 = ci05[0]
             y2 = ci95[0]
-            y0 = max(y_arr[0]) * 2 / 3
+            y0 = max(y_arr[0]) * 5 / 8
             # Choose a locatioon for the CI bar
             ax.set_yscale('log')
             # yerr = (y2 - y1) / 2.0
             # ax.errorbar(a[150], y0, xerr = None, yerr = yerr)
             errorbar(ax, a[100], y0, [y1, y2], color = 'b')
-
+            ax.annotate("95%", (a[110], y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
         else:
             y1 = ci05[i]
             y2 = ci95[i]
