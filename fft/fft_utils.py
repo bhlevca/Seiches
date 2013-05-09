@@ -728,7 +728,9 @@ if __name__ == '__main__':
     plt.clf()
     plt.plot(t, x, label = 'Noisy signal')
 
-    y = filters.butter_bandpass_filter(x, lowcut, highcut, fs, order = 6)
+    y, w, h, N, delay = filters.butterworth(x, 'band', lowcut, highcut, fs, order = 6)
+    if len(y) != len(t):
+        t = scipy.signal.resample(t, len(y))
     plt.plot(t, y, label = 'Filtered signal (%g Hz)' % f0)
     plt.xlabel('time (seconds)')
     plt.hlines([-a, a], 0, T, linestyles = '--')
@@ -782,7 +784,7 @@ if __name__ == '__main__':
 
     # filtered output
     fig.add_subplot(235)
-    pylab.plot(t, y1)
+    # pylab.plot(t, y1)
     # plt.plot(t, y, t, abs(y1))
     plt.title('Filter output - Time Domain')
     plt.grid(True)
