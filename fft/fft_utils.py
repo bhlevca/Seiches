@@ -247,7 +247,7 @@ def errorbar(ax, x0, y0, ci, color):
     ax.loglog(x0, y0 * ci[0], 'b_')
     ax.loglog(x0, y0 * ci[1], 'b_')
 
-def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.6, ymax_lim = None, log = False):
+def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.6, ymax_lim = None, log = False, fontsize = 16):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -289,9 +289,9 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     # ax.xaxis.grid(True, 'major')
     ax.xaxis.grid(True, 'minor')
     ax.grid(True)
-    plt.ylabel(ylabel)
-    plt.xlabel(xlabel)
-    plt.title(title)
+    plt.ylabel(ylabel, fontsize = fontsize)
+    plt.xlabel(xlabel, fontsize = fontsize)
+    plt.title(title, fontsize = fontsize + 2)
 
     if legend != None:
         plt.legend(legend);
