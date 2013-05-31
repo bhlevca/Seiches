@@ -73,7 +73,10 @@ def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', passatten = 10,
         if  recdepth == 0:
             step = 2
             orders = [  step if N - int(step * i / step) > step  else N - step * i / step   for i in range(0, N, step) ]
-            N = orders[0]
+            if len(orders) > 0:
+                N = orders[0]
+            else:
+                recurse = False
 
     if debug:
         print " ============= DEBUG ============ "

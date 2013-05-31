@@ -337,12 +337,13 @@ class FFTSpectralAnalysis(object):
         for i in range(0, den - 1):
             fct = int(N / den)
             LInt = i * fct
-            # RInt = (i + 2) * int(N / den)
             RInt = LInt + M
             tt = Time[LInt:RInt]
             xx = SensorDepth[LInt:RInt]
             t[i] = tt
             x[i] = xx
+        # end for
+
         # perform FFT
         y = np.zeros((den - 1, M), dtype = np.float)  # data segments
         Tm = np.zeros((den - 1, M), dtype = np.float)  # time segments

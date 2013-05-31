@@ -57,7 +57,7 @@ if __name__ == "__main__":
     plt.plot(t, x, label = 'Noisy signal')
 
     # y = filters.fft_lowpass_filter(x, lowcut, highcut, fs)
-    y2, w, h, N = filters.butterworth(x, 'pass', lowcut, highcut, fs, output = 'zpk', debug = 'False')
+    y2, w, h, N, delay = filters.butterworth(x, 'pass', lowcut, highcut, fs, output = 'zpk', debug = 'False')
     # plt.plot(t, y[:len(t)], label = 'FFT Filtered signal (%g Hz)' % f0)
     plt.plot(t, y2, label = 'Butter Filtered signal (%g Hz)' % f0)
     plt.xlabel('time (seconds)')

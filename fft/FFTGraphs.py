@@ -70,10 +70,10 @@ class FFTGraphs(object):
                     # redo the analysis withthe resampled data  #filter must be None here to prevent another filtering
                     if num_segments == 1:
                         [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
-                        self.fftsa.fourierTSAnalysis(self.Time, SensorDepth, self.show, tunits, window, num_segments, None, log)
+                        self.fftsa.fourierTSAnalysis(self.Time, SensorDepth, self.show, tunits, window, num_segments, log)
                     else:
                         [f1, avg_fftx, avg_amplit, avg_power, x05, x95] = \
-                          fftsa.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, filter, log)
+                          fftsa.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
                         self.fftx1 = avg_fftx
                         self.mx1 = avg_amplit
                         self.f1 = f1
@@ -138,7 +138,7 @@ class FFTGraphs(object):
 
 
 
-    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False):
+    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -190,7 +190,7 @@ class FFTGraphs(object):
             if self.num_segments == 1:
                 fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log)
             else:
-                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, log = log)
+                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, log = log, fontsize = fontsize)
 
     # end plotSingleSideAplitudeSpectrumFreq
 
