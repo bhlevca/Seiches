@@ -52,7 +52,7 @@ class Embayment(object):
                 samp_rate = 1.0 / dt_s
                 btype = 'band'
                 # y = fft_utils.filters.fft_bandpassfilter(SensorDepth, samp_rate, lowcut, highcut)
-                y, w, h, N = fft_utils.filters.butterworth(SensorDepth, btype, lowcut, highcut, samp_rate)
+                y, w, h, N, delay = fft_utils.filters.butterworth(SensorDepth, btype, lowcut, highcut, samp_rate, order = 5)
                 SensorDepth = y
             # end if filtered
 
@@ -139,7 +139,9 @@ class Embayment(object):
         # end
         showLevels = False
         detrend = False
-        fftsa.doSpectralAnalysis(showLevels, tunits, window, num_segments, filter)
+        draw = False
+        log = False
+        fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, num_segments, filter, log)
         fftsa.plotLakeLevels(lake_name, bay_name, detrend)
         fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits)
         fftsa.plotSingleSideAplitudeSpectrumTime(lake_name, bay_name)
@@ -448,7 +450,7 @@ if __name__ == '__main__':
     names = [ "Inner Boat Passage" , "Cove Island Harbour", "Outer Boat Passage", "Harbour Island - lake"]
 
     # set to True for Butterworth filtering - just for testing.
-    doFiltering = True
+    doFiltering = False
     lowcutoff = 1.157407e-5
     highcutoff = 0.00834
     tunits = 'day'  # can be 'sec', 'hour'
@@ -460,7 +462,7 @@ if __name__ == '__main__':
     dowavelets = True
     doWavelet = True
     doHarmonic = False
-    doFiltering = True
+    doFiltering = False
     tunits = 'day'  # can be 'sec', 'hour'
     window = 'hanning'
     num_segments = 10
@@ -480,7 +482,7 @@ if __name__ == '__main__':
     ftype = 'fft'
     # ftype = 'butter' THIS DOES NOT WORK PROPERLY for the random signal we have here
     if doFiltering:
-        filter = Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
+        filter = [lowcutoff, highcutoff]  # Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
     else:
         filter = None
 

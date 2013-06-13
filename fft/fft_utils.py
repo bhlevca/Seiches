@@ -255,8 +255,8 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     i = 0
     ls = ['-', '--', ':', '-.', '-', '--', ':', '-.']
     for a in x_arr:
-        x = x_arr[i]
-        y = y_arr[i]
+        x = x_arr[i][1:]
+        y = y_arr[i][1:]
         if log:
             ax.loglog(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i, basex = 10)
         else:
@@ -266,24 +266,30 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
 
     # plot the confidence intervals
     i = 0
+    Ymin = 10000000
+    Ymax = 0
     for a in x_arr:
         if log:
-            x = a
+            x = a[1:]
             y1 = ci05[0]
             y2 = ci95[0]
-            y0 = max(y_arr[0]) * 5 / 8
+            ymx = max(y_arr[0][1:])
+            ymin = min(y_arr[0][1:])
+            y0 = ymx * 0.5
             # Choose a locatioon for the CI bar
             ax.set_yscale('log')
             # yerr = (y2 - y1) / 2.0
             # ax.errorbar(a[150], y0, xerr = None, yerr = yerr)
             errorbar(ax, a[100], y0, [y1, y2], color = 'b')
             ax.annotate("95%", (a[110], y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
+            Ymin = min(Ymin, ymin)
+            Ymax = max(Ymax, ymx)
         else:
-            y1 = ci05[i]
-            y2 = ci95[i]
+            y1 = ci05[i][1:]
+            y2 = ci95[i][1:]
             sd = 0.5 + i * 0.2
             ax.plot(x, y1, x, y2, linestyle = '-', color = [sd, sd, sd], linewidth = 1.2)
-            ax.fill_between(x, y1, y2, where = y2 <= y1, facecolor = [sd, sd, sd], interpolate = True)
+            ax.fill_between(x, y1, y2, where = y2 >= y1, facecolor = [sd, sd, sd], interpolate = True)
         i += 1
 
     # ax.xaxis.grid(True, 'major')
@@ -299,6 +305,10 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     # axes up to make room fornumpy smoothing filter them
     if ymax_lim != None:
         plt.ylim(ymax = ymax_lim)
+    if log:
+        plt.ylim(ymin = Ymin * 0.85, ymax = Ymax * 1.15)
+
+
     plt.show()
 # end
 

@@ -9,6 +9,7 @@ import scipy as sp
 import fft_utils
 import FFTSpectralAnalysis
 import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
 
 class FFTGraphs(object):
     '''
@@ -86,11 +87,11 @@ class FFTGraphs(object):
                 # end if
             # end if
         elif self.data != None:
-            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierDataAnalysis(self.data, showOrig, draw, tunits, window, num_segments, filter, log)
+            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierDataAnalysis(self.data, showOrig, draw, tunits, window, num_segments, log)
         else:
             raise Exception("Both filename and data are missing ")
 
-        return [self.Time, self.y, self.x05, self.x95]
+        return [self.Time, self.y, self.x05, self.x95, self.power]
     # end doSpectralAnalysis
 
 
@@ -138,7 +139,7 @@ class FFTGraphs(object):
 
 
 
-    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20):
+    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -195,7 +196,133 @@ class FFTGraphs(object):
     # end plotSingleSideAplitudeSpectrumFreq
 
 
-    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, ymax_lim = None, log = False):
+    def plotPowerDensitySpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
+
+        # smooth only if not segmented
+        if self.num_segments == 1:
+            sSeries = fft_utils.smoothSeries(self.power, 5)
+        else:
+            sSeries = self.power
+
+        if self.filename1 != None and self.num_segments == 1:
+            sSeries1 = fft_utils.smoothSeries(self.power1, 5)
+        else :
+            sSeries1 = self.power1
+        # end
+
+        if self.show:
+            # Plot single - sided amplitude spectrum.
+            if title == None:
+                title = 'Power Density spectrum vs freq'
+            else:
+                title = title + " - Power Density Spectrum"
+
+            if funits == 'Hz':
+                xlabel = 'Frequency (Hz)'
+                f = self.f
+            elif funits == 'cph':
+                xlabel = 'Frequency (cph)'
+                f = self.f * 3600
+            # end if
+
+            if y_label == None:
+                ylabel = '|Z(t)| [m]'
+            else :
+                ylabel = y_label
+
+            if self.filename1 != None:
+                xa = np.array([f, f])
+                ya = np.array([sSeries, sSeries1])
+                legend = [lake_name, bay_name]
+                if self.num_segments != 1:
+                    ci05 = [self.x05, self.x05_1]
+                    ci95 = [self.x95, self.x95_1]
+            else:
+                xa = np.array([f])
+                ya = np.array([sSeries])
+                legend = [lake_name]
+                if self.num_segments != 1:
+                    ci05 = [self.x05]
+                    ci95 = [self.x95]
+            # end
+            if self.num_segments == 1:
+                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log)
+            else:
+                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, log = log, fontsize = fontsize)
+
+    # end plotPowerDensitySpectrumFreq
+
+    def plotPSDFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
+
+        # smooth only if not segmented
+        if self.num_segments == 1:
+            sSeries = fft_utils.smoothSeries(self.power, 5)
+        else:
+            sSeries = self.power
+
+        if self.filename1 != None and self.num_segments == 1:
+            sSeries1 = fft_utils.smoothSeries(self.power1, 5)
+        else :
+            sSeries1 = self.power1
+        # end
+
+        if self.show:
+            # Plot single - sided amplitude spectrum.
+            if title == None:
+                title = 'Power Density spectrum vs freq'
+            else:
+                title = title + " - Power Density Spectrum"
+
+            if funits == 'Hz':
+                xlabel = 'Frequency (Hz)'
+                f = self.f
+            elif funits == 'cph':
+                xlabel = 'Frequency (cph)'
+                f = self.f * 3600
+            # end if
+
+            if y_label == None:
+                ylabel = '|Z(t)| [m]'
+            else :
+                ylabel = y_label
+
+            if self.filename1 != None:
+                xa = np.array([f, f])
+                ya = np.array([sSeries, sSeries1])
+                legend = [lake_name, bay_name]
+                if self.num_segments != 1:
+                    ci05 = [self.x05, self.x05_1]
+                    ci95 = [self.x95, self.x95_1]
+            else:
+                xa = np.array([f])
+                ya = np.array([sSeries])
+                legend = [lake_name]
+                if self.num_segments != 1:
+                    ci05 = [self.x05]
+                    ci95 = [self.x95]
+            # end
+
+
+        NFFT = len(sSeries)
+        wlen = int(NFFT / self.num_segments)
+        noverlap = int (wlen / 2)  # 50% overlap
+        # prepare for the amplitude spectrum analysis
+        if tunits == 'day':
+            factor = 86400
+        elif tunits == 'hour':
+            factor = 3600
+        else:
+            factor = 1
+        dt_s = (self.Time[2] - self.Time[1]) * factor  # Sampling period [s]
+        Fs = 1 / dt_s  # Samplig freq    [Hz]
+        plt.psd(sSeries, NFFT = NFFT, Fs = Fs, window = np.hanning(NFFT), sides = 'onesided', noverlap = noverlap, pad_to = None, scale_by_freq = True)
+        plt.title('Welch')
+        plt.ylabel(y_label)
+        plt.grid(True)
+
+        plt.show()
+
+    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, ymax_lim = None, log = False, tunits = None):
         sSeries = fft_utils.smoothSeries(self.mx, 5)
         if self.filename1 != None:
             sSeries1 = fft_utils.smoothSeries(self.mx1, 5);

@@ -52,7 +52,7 @@ class FFTSpectralAnalysis(object):
     # end
 
 
-    def FourierAnalysis(self, filename, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None):
+    def FourierAnalysis(self, filename, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False):
 
         '''
         FFT for Spectral Analysis
@@ -82,7 +82,11 @@ class FFTSpectralAnalysis(object):
 
         # Filter data here on the whole lenght
         if filter != None:
-            y, w, h, b, a = filter.butterworth(SensorDepth, Fs)
+            lowcut = filter[0]
+            highcut = filter[1]
+            btype = 'band'
+            y, w, h, b, a = filters.butterworth(SensorDepth, btype, lowcut, highcut, Fs, recurse = True)
+            # filter.butterworth(SensorDepth, Fs)
             SensorDepth = y
             # ToDo:
             # here we can enable some filter display and test
@@ -96,7 +100,7 @@ class FFTSpectralAnalysis(object):
         if num_segments == 1:
             [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)  # , window, filter)
         else:
-            [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments)
+            [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
             fftx = avg_fftx
             mx = avg_amplit
             power = avg_power
@@ -108,7 +112,7 @@ class FFTSpectralAnalysis(object):
 
     # end
 
-    def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False):
+    def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, log = False):
 
         Time, SensorDepth = data
         x05 = None
@@ -118,7 +122,7 @@ class FFTSpectralAnalysis(object):
             Time += 695056
 
         if num_segments == 1:
-            [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)  # , window, filter)
+            [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)
         else:
             [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
             fftx = avg_fftx
@@ -132,7 +136,7 @@ class FFTSpectralAnalysis(object):
         return [y, Time, fftx, NumUniquePts, mx, f, power, x05, x95]
 
 
-    def fourierTSAnalysis(self, Time, SensorDepth, draw = 'True', tunits = 'sec', window = None, log = False):  # , filter = None):
+    def fourierTSAnalysis(self, Time, SensorDepth, draw = 'True', tunits = 'sec', log = False):
         '''
         Clearly, it is difficult to identify the frequency components from looking at this signal;
         that's why spectral analysis is so popular.
@@ -187,15 +191,6 @@ class FFTSpectralAnalysis(object):
         dt_s = (Time[2] - Time[1]) * factor  # Sampling period [s]
         Fs = 1 / dt_s  # Samplig freq    [Hz]
 
-        '''
-        # if filter is defined filter the data
-        if filter != None:
-            y, w, h, b, a = filter.butterworth(SensorDepth, Fs)
-            SensorDepth = y
-            # ToDo:
-            # here we can enable some filter display and test
-        # end filter
-        '''
         # nextpow2 = This function is useful for optimizing FFT operations, which are most efficient when sequence length is an exact power of two.
         #  does seem to affect the value of the amplitude
         # # NFFT = fft_utils.nextpow2(L)   # Next power of 2 from length of the original vector, transform length
@@ -204,41 +199,29 @@ class FFTSpectralAnalysis(object):
         # DETREND THE SIGNAL is necessary to put all signals oscialltions around 0 ant the real level in spectral analysis
         yd = sp.signal.detrend(SensorDepth)
 
-        # apply hamming window to reduce spectral leakeage
         # Take fft, padding with zeros so that length(fftx) is equal to nfft
-        if window != None:
-            if window == 'flat' or window == 'flattop_convol':  # moving average
-                w = np.ones(L, 'd')
-            elif window == 'flattop':
-                w = fft_utils.flattop(L)
-            elif window == 'kaiser':
-                 w = np.kaiser(L, 6)
-            else:
-                w = sp.signal.get_window(window, L, fftbins = 1)
-                # w = eval('sp.signal.' + window + '(L)')
-
-            fftx = fftpack.fft(yd * w , NFFT)
-        else :
-            fftx = fftpack.fft(yd, NFFT)  # DFT
-            sFreq = np.sum(abs(fftx) ** 2) / NFFT
-            sTime = np.sum(yd ** 2)
-            assert abs(sFreq - sTime) < eps
+        fftx = fftpack.fft(yd, NFFT)  # DFT
+        sFreq = np.sum(abs(fftx) ** 2) / NFFT
+        sTime = np.sum(yd ** 2)
+        assert abs(sFreq - sTime) < eps
 
         # What is power of the DFT and why does not show anything for us?
         # The FFT of the depth non CONJ shows good data except the beginning due to the fact
         # that the time series are finite.
         power = (np.abs(fftx)) ** 2  # Power of the DFT
 
+        # TEST the Flat Top
         # amp = np.sqrt(2 * power / NFFT / Fw)
         # amp = 2 * np.abs(self.Wind_Flattop(fftx)) / NFFT
 
-        # Calculate the numberof unique points
+        # Calculate the number of unique points
         NumUniquePts = int(math.ceil((NFFT / 2) + 1))
 
         # FFT is symmetric, throw away second half
         fft2 = fftx[0:NumUniquePts]
-        # amp = amp[0:NumUniquePts]
         power = power[0:NumUniquePts]
+        # amp = amp[0:NumUniquePts]
+
 
         # Take the magnitude of fft of x and scale the fft so that it is not a function of % the length of x
         # NOTE: If the frequency of interest is not represented exactly at one of the discrete points
@@ -248,14 +231,7 @@ class FFTSpectralAnalysis(object):
         # Since we dropped half the FFT, we multiply mx by 2 to keep the same energy.
         # The DC component and Nyquist component, if it exists, are unique and should not
         # be multiplied by 2.
-
-
-        if window == 'flattop_convol':
-            mx = (np.abs(self.Wind_Flattop(fftx)) / NumUniquePts)[0:NumUniquePts]
-        else:
-            mx = 2 * np.abs(fft2) / NumUniquePts
-
-
+        mx = 2 * np.abs(fft2) / NumUniquePts
 
         # This is an evenly spaced frequency vector with NumUniquePts points.
         # generate a freq spectrum from 0 to Fs / 2 (Nyquist freq) , NFFT / 2 + 1 points

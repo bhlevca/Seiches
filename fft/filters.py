@@ -50,7 +50,7 @@ def butterworth(data, btype, lowcut, highcut, fs, output = 'ba', passatten = 10,
 
     if order == None:
         (N, Wn) = sp.signal.buttord(wp = wp, ws = ws, gpass = passatten, gstop = stopatten, analog = 0)
-        if N > 8 : N = 10
+        if N > 8 : N = 6
     else:
         N = order
         Wn = wp
