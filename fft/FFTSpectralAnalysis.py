@@ -203,6 +203,8 @@ class FFTSpectralAnalysis(object):
         fftx = fftpack.fft(yd, NFFT)  # DFT
         sFreq = np.sum(abs(fftx) ** 2) / NFFT
         sTime = np.sum(yd ** 2)
+
+        # This is a sanity check
         assert abs(sFreq - sTime) < eps
 
         # What is power of the DFT and why does not show anything for us?
@@ -238,9 +240,9 @@ class FFTSpectralAnalysis(object):
         # The FFT is calculated for every discrete point of the frequency vector described by
         freq = np.array(range(0, NumUniquePts))
         freq = freq * Fs / NFFT  # 2
-
         # same as
-        # freq = np.fft.fftfreq(NFFT, d = dt_s)
+        # freq = np.fft.fftfreq(NFFT, d = dt_s)[:NumUniquePts]
+
         return [yd, Time, fftx, NumUniquePts, mx, freq, power]
     # end
 

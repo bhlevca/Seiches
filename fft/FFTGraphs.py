@@ -11,6 +11,64 @@ import FFTSpectralAnalysis
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
+
+ # @staticmethod
+def plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq, ci, num_segments = 1, \
+                                               funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
+
+    # Plot single - sided amplitude spectrum.
+    if title == None:
+        title = 'Single-Sided Amplitude spectrum vs freq'
+    else:
+        title = title + " - Single-Sided Amplitude"
+
+    if funits == 'Hz':
+        xlabel = 'Frequency (Hz)'
+    elif funits == 'cph':
+        xlabel = 'Frequency (cph)'
+
+    # end if
+
+    if y_label == None:
+        ylabel = '|Z(t)| [m]'
+    else :
+        ylabel = y_label
+
+    legend = []
+    ci05 = []
+    ci95 = []
+    XA = []
+    YA = []
+    for j in range(0, len(bay_names)):
+        legend.append(bay_names[j])
+
+         # smooth only if not segmented
+        if num_segments == 1:
+            sSeries = fft_utils.smoothSeries(data[j], 5)
+        else:
+            sSeries = data[j]
+        # end
+        if funits == 'cph':
+            f = freq[j] * 3600
+        else:
+            f = freq[j]
+
+        XA.append(f)
+        YA.append(sSeries)
+        if num_segments != 1:
+            ci05.append(ci[0][j])
+            ci95.append(ci[1][j])
+    # end
+    xa = np.array(XA)
+    ya = np.array(YA)
+
+    if num_segments == 1:
+        fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log)
+    else:
+        fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, log = log, fontsize = fontsize)
+
+# end plotSingleSideAplitudeSpectrumFreqMultiple
+
 class FFTGraphs(object):
     '''
     classdocs
@@ -52,11 +110,13 @@ class FFTGraphs(object):
         self.x95_1 = None  # 95% conf level bay
         self.num_segments = 1
         self.data = data
+        self.window = None
     # end
 
     def doSpectralAnalysis(self, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False):
 
         self.num_segments = num_segments
+        self.window = window
 
         if self.filename != None:
             [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierAnalysis(self.filename, showOrig, tunits, window, num_segments, filter, log)
@@ -66,24 +126,15 @@ class FFTGraphs(object):
 
                 # resample to be the same as first only if needed
                 if (self.Time[1] - self.Time[0]) - (self.Time1[1] - self.Time1[0]) > eps:
-                    SensorDepth = sp.signal.resample(self.y1, len(self.Time))
-
-                    # redo the analysis withthe resampled data  #filter must be None here to prevent another filtering
-                    if num_segments == 1:
-                        [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
-                        self.fftsa.fourierTSAnalysis(self.Time, SensorDepth, self.show, tunits, window, num_segments, log)
-                    else:
-                        [f1, avg_fftx, avg_amplit, avg_power, x05, x95] = \
-                          fftsa.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
-                        self.fftx1 = avg_fftx
-                        self.mx1 = avg_amplit
-                        self.f1 = f1
-                        self.power1 = avg_power
-                        self.x05_1 = x05
-                        self.x95_1 = x95
-
-                else:
-                    SensorDepth = self.y1
+                    self.y1 = sp.signal.resample(self.y1, len(self.Time))
+                    self.mx1 = sp.signal.resample(self.mx1, len(self.mx))
+                    self.f1 = sp.signal.resample(self.f1, len(self.f))
+                    self.power1 = sp.signal.resample(self.power1, len(self.power))
+                    self.fftx1 = sp.signal.resample(self.fftx1, len(self.fftx))
+                    if not log:
+                        self.x05_1 = sp.signal.resample(self.x05_1, len(self.x05))
+                        self.x95_1 = sp.signal.resample(self.x95_1, len(self.x95))
+                    self.NumUniquePts1 = self.NumUniquePts
                 # end if
             # end if
         elif self.data != None:
@@ -196,19 +247,36 @@ class FFTGraphs(object):
     # end plotSingleSideAplitudeSpectrumFreq
 
 
+
+
+    def compute_CI(self, data, ci = 0.95, log = False):
+        # for power density the confidence interval calculationw are not good as they are for amplitude. NEED to RECALCULATE
+        interval_len = len(self.Time) / self.num_segments
+        data_len = len(self.Time)
+        edof = fft_utils.edof(data, data_len, interval_len, self.window)  # one dt chunk see Hartman Notes ATM 552 page 159 example
+        (x05, x95) = fft_utils.confidence_interval(data, edof, 0.95, log)
+        return (x05, x95)
+
     def plotPowerDensitySpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
 
         # smooth only if not segmented
         if self.num_segments == 1:
-            sSeries = fft_utils.smoothSeries(self.power, 5)
+            sSeries = fft_utils.smoothSeries(np.abs(self.power), 5)
         else:
             sSeries = self.power
+            # for power density the confidence interval calculationw are not good as they are for amplitude. NEED to RECALCULATE
+            (self.x05, self.x95) = self.compute_CI(np.abs(self.power), 0.95, log)
+
 
         if self.filename1 != None and self.num_segments == 1:
             sSeries1 = fft_utils.smoothSeries(self.power1, 5)
         else :
             sSeries1 = self.power1
+            # for power density the confidence interval calculationw are not good as they are for amplitude. NEED to RECALCULATE
+            (self.x05_1, self.x95_1) = self.compute_CI(np.abs(self.power1), 0.95, log)
         # end
+
+
 
         if self.show:
             # Plot single - sided amplitude spectrum.
@@ -226,7 +294,7 @@ class FFTGraphs(object):
             # end if
 
             if y_label == None:
-                ylabel = '|Z(t)| [m]'
+                ylabel = 'PSD (m$^2$/' + funits + ')'
             else :
                 ylabel = y_label
 
@@ -259,12 +327,18 @@ class FFTGraphs(object):
             sSeries = fft_utils.smoothSeries(self.power, 5)
         else:
             sSeries = self.power
+            # for power density the confidence interval calculationw are not good as they are for amplitude. NEED to RECALCULATE
+            (self.x05, self.x95) = self.compute_CI(np.abs(self.power), 0.95, log)
+
 
         if self.filename1 != None and self.num_segments == 1:
             sSeries1 = fft_utils.smoothSeries(self.power1, 5)
         else :
             sSeries1 = self.power1
+            # for power density the confidence interval calculationw are not good as they are for amplitude. NEED to RECALCULATE
+            (self.x05_1, self.x95_1) = self.compute_CI(np.abs(self.power1), 0.95, log)
         # end
+
 
         if self.show:
             # Plot single - sided amplitude spectrum.
@@ -282,7 +356,7 @@ class FFTGraphs(object):
             # end if
 
             if y_label == None:
-                ylabel = '|Z(t)| [m]'
+                ylabel = 'PSD (m$^2$/' + funits + ')'
             else :
                 ylabel = y_label
 

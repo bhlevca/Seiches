@@ -275,19 +275,19 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
             y2 = ci95[0]
             ymx = max(y_arr[0][1:])
             ymin = min(y_arr[0][1:])
-            y0 = ymx * 0.5
+            y0 = ymx * 0.65
             # Choose a locatioon for the CI bar
             ax.set_yscale('log')
             # yerr = (y2 - y1) / 2.0
             # ax.errorbar(a[150], y0, xerr = None, yerr = yerr)
-            errorbar(ax, a[100], y0, [y1, y2], color = 'b')
-            ax.annotate("95%", (a[110], y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
+            errorbar(ax, a[int((len(a) - 1))] * 1.2, y0, [y1, y2], color = 'b')
+            ax.annotate("95%", (a[int((len(a) - 1))] * 1.3, y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
             Ymin = min(Ymin, ymin)
             Ymax = max(Ymax, ymx)
         else:
             y1 = ci05[i][1:]
             y2 = ci95[i][1:]
-            sd = 0.5 + i * 0.2
+            sd = 0.2 + i * 0.1
             ax.plot(x, y1, x, y2, linestyle = '-', color = [sd, sd, sd], linewidth = 1.2)
             ax.fill_between(x, y1, y2, where = y2 >= y1, facecolor = [sd, sd, sd], interpolate = True)
         i += 1
