@@ -17,25 +17,44 @@ from optparse import OptionParser
 
 path = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/LakeOntario-data'
 path1 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Data-long/FMB'
-path2 = 'software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Data-long/LOntario'
+path2 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Data-long/LOntario'
 path3 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Toronto_Harbour'
 path4 = '/home/bogdan/Documents/UofT/PhD/Data_Files/Toberymory_tides'
 
 embayments = {'FMB' : {'A':850000., 'B':25. , 'H':1., 'L':130.,
                        'Period':[12.2, 5.065, 1.38, 0.81, 0.48] ,  # h
                        'Amplitude':[0.0365, 0.023, 0.015, 0.018, 0.016],  # m
+                       'Amplitude_bay':[0.0365, 0.023, 0.015, 0.018, 0.016],  # m
                        'Phase':[5, 22, -15, 39, -4.6],  # rad
-                       'CD':0.0032},
-              'Tob-IBP' : {'A':150000., 'B':140. , 'H':2.143, 'L':570.,
-                       'Period':[16.8 / 60, 12.0 / 60, 8.0 / 60, 5.35 / 60, 4.5 / 60] ,  # min
+                       'CD':0.0032,
+                       'filename':path + '/Inner_Harbour_July_processed.csv'},
+              'Tob-IBP-ex' : {'A':150000., 'B':140. , 'H':2.143, 'L':570.,
+                       'Period':[16.8 / 60, 12.0 / 60, 8.0 / 60, 5.35 / 60, 4.5 / 60] ,  # h
                        'Amplitude':[0.02, 0.018, 0.016, 0.015, 0.018],  # m
                        'Phase':[0, 0, 0, 0, 0],  # rad
-                       'CD':0.0032},
-              'Tob-CIH' : {'A':62000., 'B':58. , 'H':1.9, 'L':170.,
+                       'CD':0.0032,
+                       'filename':path4 + '/LL1.csv'},
+              'Tob-IBP' : {'A':145000., 'B':140. , 'H':2.143, 'L':570.,
+                       'Period':[16.8 / 60, 12.0 / 60, 8.0 / 60] ,  # h
+                       'Amplitude':[0.02, 0.018, 0.016],  # m
+                       'Amplitude_bay':[0.09, 0.043, 0.058],  # m
+                       'Phase':[0, 0, 0],  # rad
+                       'CD':0.0032,
+                       'filename':path4 + '/LL1.csv'},
+              'Tob-CIH' : {'A':64000., 'B':56. , 'H':1.9, 'L':175.,
                        'Period':[16.8 / 60, 12.0 / 60, 9.2 / 60] ,  # h
                        'Amplitude':[0.02, 0.018, 0.014],  # m
+                       'Amplitude_bay':[0.025, 0.078, 0.037],  # m
                        'Phase':[0, 0, 0],  # rad
-                       'CD':0.0032},
+                       'CD':0.0032,
+                       'filename':path4 + '/LL4.csv'},
+              'L-SUP' : {'A':180000., 'B':30. , 'H':1., 'L':2000.,
+                       'Period':[2.9, 2.9] ,  # h
+                       'Amplitude':[0.1, 0.1],  # m
+                       'Phase':[0, 0],  # rad
+                       'CD':0.0032,
+                       'filename':None},
+
               }
 
 
@@ -64,6 +83,7 @@ class Embayment(object):
         self.Amplitude = dict['Amplitude']
         self.Phase = dict['Phase']
         self.Cd = dict['CD']
+        self.filename = dict['filename']
 
     @staticmethod
     def plotMultipleTimeseries(path_in, filenames, names, detrend = False, filtered = False, lowcut = None, highcut = None, tunits = 'sec'):
@@ -186,8 +206,6 @@ class Embayment(object):
             bay_names.append("Outer Boat Passage")
             fftsa4 = FFTGraphs.FFTGraphs(path4, 'LL3-28jul2010.csv', None, show , tunits)
             bay_names.append("Harbour Island - lake")
-
-
         else:
             print "Unknown embayment"
             exit(1)
@@ -339,16 +357,15 @@ class Embayment(object):
         ylabel_sc = 'Frequency ($s^{-1}$)'
         kwavelet.plotAmplitudeSpectrogram(ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
 
-    def EmbaymentFlow(self, A, B, H, HbVect, dt):
+    def EmbaymentFlow(self, A, HbVect, dt):
         '''
         calculates flow in the channel based on water level fluctuations in the
         embayment
         '''
-        Q = np.zeros(1, length(HbVect));
-        for i in range(1, length(HbVect)):
-            V = A / (B * H) * (HbVect[i - 1] - HbVect[i]) / dt
-            Q[i] = (B * H) * V
-        end
+        Q = np.zeros(len(HbVect))
+        for i in range(1, len(HbVect)):
+            Q[i] = A * (HbVect[i - 1] - HbVect[i]) / dt
+        # end
         return Q
     # end EmbaymentFlow
 
@@ -372,11 +389,43 @@ class Embayment(object):
         '''
         embPlot = EmbaymentPlot.EmbaymentPlot(self)
         [t, X, c, k, w, x0, v0, R] = embPlot.Response(days)
-        # embPlot.plotForcingResponse(t)
+        embPlot.plotForcingResponse(t)
         embPlot.plotRespVsOmegaVarAmplit()
+        embPlot.plotRespVsOmegaVarFric()
+        embPlot.plotPhaseVsOmega()
+        embPlot.plotRespVsOmegaVarArea()
+        embPlot.plotRespVsOmegaVarMouth()
+        embPlot.plotRespVsOmegaVarMouthCurves()
+        embPlot.plotDimensionlessResponse()
         embPlot.show()
 
-        # Q = embPlot.embaymentFlow()
+        Qp = self.EmbaymentFlow(self.A, R, (t[2] - t[1]) * 86400)
+
+        Vp = 0
+        sumpred = 0
+        for i in range(0, len(Qp) - 1):
+            sumpred = sumpred + 0.5 * np.abs(R[i] - R[i - 1])
+            if ((Qp[i] - Qp[i - 1]) > 0) and (Qp[i] > 0) :
+                Vp = Vp + (Qp[i] + Qp[i - 1]) / 2 * 300;
+            # end
+        # end
+
+        print "V pred=%f, Sum pred=%f" % (Vp, sumpred)
+
+        [Time, SensorDepth] = fft_utils.readFile("", self.filename)
+        Qm = self.EmbaymentFlow(self.A, SensorDepth, (Time[2] - Time[1]) * 86400)
+
+        Vm = 0
+        summeas = 0
+        for i in range(0, len(Qm) - 1):
+            summeas = summeas + 0.5 * np.abs(SensorDepth[i] - SensorDepth[i - 1])
+            if ((Qm[i] - Qm[i - 1]) > 0) and (Qm[i] > 0) :
+                Vm = Vm + (Qm[i] + Qm[i - 1]) / 2 * 300;
+            # end
+        # end
+
+        print "V meas=%f Sum meas=%f" % (Vm, summeas)
+
 
         '''
         y=detrend(SensorDepth2);
@@ -384,7 +433,7 @@ class Embayment(object):
         %contribute to flushing.
         y2=smoothSeries(SensorDepth2,8); %30 minutes
         % measured
-        Q2=embaymentFlow(A,B,H,SensorDepth2,(Time(2)-Time(1))*86400);
+        Q2=self.EmbaymentFlow(self.A,self.B,self.H,SensorDepth2,(Time(2)-Time(1))*86400);
         figure;
         [titl, errmsg] = sprintf('FM Bay Flow vs.  Time Diagram\n Cd=%4.3f[m] H=%4.1f B=%4.1f[m] L=%4.1f[m]',Cd,H,B,L);
         %plot(t(10:length(Q)),Q(10:length(Q)),'b'),xlabel('time [s]'), ylabel('Q [m^3/s]'), title(titl), grid on, hold  on
@@ -520,10 +569,11 @@ if __name__ == '__main__':
     # bay = 'BUR'
     # bay = 'Tob-OBP'
     bay = 'Tob-IBP'
-    # bay = 'Tob-CIH'
+    bay = 'Tob-CIH'
     # bay = 'Tob_All'
     # bay = 'Tob-HI'
-    days = 0.5
+    # bay = 'L-SUP'
+    days = 0.2
 
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
@@ -539,6 +589,7 @@ if __name__ == '__main__':
         print "* Calculate Flow *"
         emb = Embayment(bay)
         emb.CalculateFlow(days)
+
     else:
         print ">> NOT Calculate Flow <<"
     print "Done."
