@@ -8,7 +8,10 @@ import scipy as sp
 import matplotlib.ticker as ticker
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
-import csv
+import csv, sys
+
+sys.path.insert(0, '/software/SAGEwork/Pressure_analysis')
+import utils.stats as ustats
 
 def readFile(path_in, fname):
     # read Lake data
@@ -40,7 +43,7 @@ def readFile(path_in, fname):
 
 def plot_point_Array(title, xlabel, ylabel, x_arr, y_arr, p_arr, legend = None, linewidth = 0.6, \
                       ymax_lim = None, ymin_lim = None, xmax_lim = None, xmin_lim = None,
-                      arrowprops = None, annotate = False, log = 'lin', hline = None):
+                      arrowprops = None, annotate = False, log = 'lin', hline = None, settitle = False, estimate = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -87,20 +90,21 @@ def plot_point_Array(title, xlabel, ylabel, x_arr, y_arr, p_arr, legend = None, 
             if arrowprops:
                 ax.annotate(p_arr[i], (x_arr[i], y_arr[i]), xytext = (xmax / 8., ymax / 8.), textcoords = 'offset points', \
                             arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0.5', color = 'red'), \
-                            ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
+                            ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'), size = 18)
             else:
                 ax.annotate(p_arr[i], (x_arr[i], y_arr[i]), xytext = (xmax / 8., ymax / 8.), textcoords = 'offset points', \
-                            ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
+                            ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'), size = 18)
 
         # ax.xaxis.grid(True, 'major')
     ax.xaxis.grid(True, 'minor')
     ax.grid(True)
-    plt.ylabel(ylabel).set_fontsize(16)
-    plt.xlabel(xlabel).set_fontsize(16)
-    plt.title(title).set_fontsize(20)
+    plt.ylabel(ylabel).set_fontsize(22)
+    plt.xlabel(xlabel).set_fontsize(22)
+    if settitle:
+        plt.title(title).set_fontsize(20)
 
     if legend != None:
-        plt.legend(legend, loc = 2, numpoints = 1);
+        plt.legend(legend, loc = 2, numpoints = 1, fontsize = '18');
     # rotates and right aligns the x labels, and moves the bottom of the
     # axes up to make room fornumpy smoothing filter them
     if ymax_lim != None:
@@ -120,6 +124,25 @@ def plot_point_Array(title, xlabel, ylabel, x_arr, y_arr, p_arr, legend = None, 
         plt.xlim(xmin = xmin - xmin / 4.)  # xmin_lim)
     else:
         plt.xlim(xmin = xmin - xmin / 4.)
+
+    plt.xticks(fontsize = 20)
+    plt.yticks(fontsize = 20)
+
+
+    [r2, slope, intercept, r_value, p_value, std_err] = ustats.rsquared(x_arr, y_arr)
+
+    if estimate != None and xmin_lim != None and xmax_lim != None:
+        eps = 0.000001
+        t = np.linspace(xmin_lim + eps, 0.3, 100)
+        xl = np.array(t);
+        for i in range(0, len(xl)):
+            xl[i] = intercept
+        ax.plot(t, xl, '-.b', lw = 2)
+
+    x = np.linspace(0, xmax, 100)
+    y = slope * x + intercept
+    ax.plot(x, y, '-.b', lw = 2)
+
     plt.draw()
     plt.show()
 # end
@@ -133,5 +156,5 @@ if __name__ == '__main__':
     title = "Lake Superior embayments. Relative amplification vs. mouth area"
     ylabel = "Relative Amplitude (bay/lake)"
     xlabel = "Mouth Area m$^2$"
-    plot_point_Array(title, xlabel, ylabel, MouthArea, RelativeAmplit, Area, legend = ["L. Sup. Emb."], linewidth = 0.6, ymax_lim = 2.0, ymin_lim = 0,
-                     annotate = True, log = 'logx' , hline = 1, xmax_lim = 80, xmin_lim = 0)
+    plot_point_Array(title, xlabel, ylabel, MouthArea, RelativeAmplit, Area, legend = ["L. Sup. Emb. (ha)"], linewidth = 0.6, ymax_lim = 2.0, ymin_lim = 0,
+                     annotate = True, log = 'logx' , hline = 1, xmax_lim = 80, xmin_lim = 0, settitle = False, estimate = True)

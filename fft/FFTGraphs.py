@@ -121,20 +121,15 @@ class FFTGraphs(object):
         if self.filename != None:
             [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierAnalysis(self.filename, showOrig, tunits, window, num_segments, filter, log)
             if self.filename1 != None:
-                [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = self.fftsa.FourierAnalysis(self.filename1, showOrig, tunits, window, num_segments, filter, log)
+
+                [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
+                    self.fftsa.FourierAnalysis(self.filename1, showOrig, tunits, window, num_segments, filter, log)
                 eps = (self.Time[1] - self.Time[0]) / 100
 
-                # resample to be the same as first only if needed
                 if (self.Time[1] - self.Time[0]) - (self.Time1[1] - self.Time1[0]) > eps:
-                    self.y1 = sp.signal.resample(self.y1, len(self.Time))
-                    self.mx1 = sp.signal.resample(self.mx1, len(self.mx))
-                    self.f1 = sp.signal.resample(self.f1, len(self.f))
-                    self.power1 = sp.signal.resample(self.power1, len(self.power))
-                    self.fftx1 = sp.signal.resample(self.fftx1, len(self.fftx))
-                    if not log:
-                        self.x05_1 = sp.signal.resample(self.x05_1, len(self.x05))
-                        self.x95_1 = sp.signal.resample(self.x95_1, len(self.x95))
-                    self.NumUniquePts1 = self.NumUniquePts
+                    bResample = True
+                    [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
+                        self.fftsa.FourierAnalysis(self.filename1, showOrig, tunits, window, num_segments, filter, log, bResample, self.Time)
                 # end if
             # end if
         elif self.data != None:
@@ -146,7 +141,7 @@ class FFTGraphs(object):
     # end doSpectralAnalysis
 
 
-    def plotLakeLevels(self, lake_name, bay_name, detrend = False, y_label = None, title = None):
+    def plotLakeLevels(self, lake_name, bay_name, detrend = False, y_label = None, title = None, plottitle = False):
         if self.show :
             # plot the original Lake oscillation input
             L = len(self.Time)
@@ -183,14 +178,15 @@ class FFTGraphs(object):
                 title = "Detrended Lake Levels"
             else:
                 title = title + " - time series"
-            fft_utils.plot_n_TimeSeries(title, xlabel, ylabel, xa, ya, legend)
+            fft_utils.plot_n_TimeSeries(title, xlabel, ylabel, xa, ya, legend, plottitle)
 
         # end if
     # end plotLakeLevels
 
 
 
-    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
+    def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None,
+                                            log = False, fontsize = 20, tunits = None, plottitle = False):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -240,9 +236,10 @@ class FFTGraphs(object):
                     ci95 = [self.x95]
             # end
             if self.num_segments == 1:
-                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log)
+                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle)
             else:
-                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, log = log, fontsize = fontsize)
+                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
+                                                log = log, fontsize = fontsize, plottitle = plottitle)
 
     # end plotSingleSideAplitudeSpectrumFreq
 
@@ -257,7 +254,8 @@ class FFTGraphs(object):
         (x05, x95) = fft_utils.confidence_interval(data, edof, 0.95, log)
         return (x05, x95)
 
-    def plotPowerDensitySpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
+    def plotPowerDensitySpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, \
+                                     log = False, fontsize = 20, tunits = None, plottitle = False):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -314,13 +312,15 @@ class FFTGraphs(object):
                     ci95 = [self.x95]
             # end
             if self.num_segments == 1:
-                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log)
+                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle)
             else:
-                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, log = log, fontsize = fontsize)
+                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
+                                               log = log, fontsize = fontsize, plottitle = plottitle)
 
     # end plotPowerDensitySpectrumFreq
 
-    def plotPSDFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
+    def plotPSDFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, \
+                    tunits = None, plottitle = False):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -390,13 +390,15 @@ class FFTGraphs(object):
         dt_s = (self.Time[2] - self.Time[1]) * factor  # Sampling period [s]
         Fs = 1 / dt_s  # Samplig freq    [Hz]
         plt.psd(sSeries, NFFT = NFFT, Fs = Fs, window = np.hanning(NFFT), sides = 'onesided', noverlap = noverlap, pad_to = None, scale_by_freq = True)
-        plt.title('Welch')
+        if plottitle:
+            plt.title('Welch')
         plt.ylabel(y_label)
         plt.grid(True)
 
         plt.show()
 
-    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, ymax_lim = None, log = False, tunits = None):
+    def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, \
+                                           ymax_lim = None, log = False, tunits = None, plottitle = False):
         sSeries = fft_utils.smoothSeries(self.mx, 5)
         if self.filename1 != None:
             sSeries1 = fft_utils.smoothSeries(self.mx1, 5);
@@ -425,10 +427,11 @@ class FFTGraphs(object):
                 ya = np.array([sSeries[1:]])
                 legend = [lake_name]
             # end
-            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, linewidth = 1.2, ymax_lim = ymax_lim, log = log)
+            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, linewidth = 1.2, \
+                                   ymax_lim = ymax_lim, log = log, plottitle = plottitle)
     # end plotSingleSideAplitudeSpectrumTime
 
-    def plotZoomedSingleSideAplitudeSpectrumFreq(self):
+    def plotZoomedSingleSideAplitudeSpectrumFreq(self, plottitle = False):
         sSeries = fft_utils.smoothSeries(self.mx[100:-1], 5)
         if self.filename1 != None:
             sSeries1 = fft_utils.smoothSeries(self.mx1[100:-1], 5);
@@ -448,10 +451,10 @@ class FFTGraphs(object):
                 ya = np.array([sSeries])
                 legend = ['lake']
             # end
-            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend)
+            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, plottitle = plottitle)
     # end plotZoomedSingleSideAplitudeSpectrumFreq
 
-    def plotZoomedSingleSideAplitudeSpectrumTime(self):
+    def plotZoomedSingleSideAplitudeSpectrumTime(self, plottitle = False):
         zsSeries = fft_utils.smoothSeries(self.mx[100:-1], 5)
         if self.filename1 != None:
             zsSeries1 = fft_utils.smoothSeries(self.mx1[100:-1], 5);
@@ -474,10 +477,10 @@ class FFTGraphs(object):
                 ya = np.array([zsSeries])
                 legend = ['lake']
             # end
-            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend)
+            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, plottitle = plottitle)
     # end plotZoomedSingleSideAplitudeSpectrumTime
 
-    def plotCospectralDensity(self):
+    def plotCospectralDensity(self, plottitle = False):
         if self.show:
             # plot the power of the cospectral density F_in(w) * F_out(w)
             #
@@ -498,7 +501,7 @@ class FFTGraphs(object):
         # end
     # end plotCospectralDensity
 
-    def plotPhase(self):
+    def plotPhase(self, plottitle = False):
         if self.show:
             # phase = np.unwrap(np.angle(self.fftx[0:self.NumUniquePts]))
             phase = np.unwrap(np.angle(self.fftx[0:len(self.fftx) / 2 + 1]))
@@ -508,7 +511,7 @@ class FFTGraphs(object):
             title = 'Phase delay'
             legend = [ 'phase']
             # avoind plotting the inf value of tph and start from index 1.
-            fft_utils.plot_n_Array(title, xlabel, ylabel, [tph[1:]], [phase[1:] * 180 / np.pi], legend)
+            fft_utils.plot_n_Array(title, xlabel, ylabel, [tph[1:]], [phase[1:] * 180 / np.pi], legend, plottitle = plottitle)
         # end
     # end plotPhase
 

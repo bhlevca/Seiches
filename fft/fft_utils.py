@@ -185,7 +185,7 @@ def detrend_separate(y, order = 0):
     resid = (y_ - fittedvalues).reshape(*shape)
     return resid, params
 
-def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6):
+def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plottitle = False):
 
         fig = plt.figure(facecolor = 'w', edgecolor = 'k')
         ax = fig.add_subplot(111)
@@ -198,7 +198,8 @@ def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6):
 
         plt.ylabel(ylabel)
         plt.xlabel(xlabel)
-        plt.title(title)
+        if plottitle:
+            plt.title(title)
         if legend != None:
             plt.legend(legend);
 
@@ -208,7 +209,7 @@ def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6):
         plt.show()
     # end
 
-def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None, log = False):
+def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None, log = False, plottitle = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -230,7 +231,8 @@ def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth =
     ax.grid(True)
     plt.ylabel(ylabel).set_fontsize(16)
     plt.xlabel(xlabel).set_fontsize(16)
-    plt.title(title).set_fontsize(20)
+    if plottitle:
+        plt.title(title).set_fontsize(20)
 
     if legend != None:
         plt.legend(legend);
@@ -247,20 +249,26 @@ def errorbar(ax, x0, y0, ci, color):
     ax.loglog(x0, y0 * ci[0], 'b_')
     ax.loglog(x0, y0 * ci[1], 'b_')
 
-def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.6, ymax_lim = None, log = False, fontsize = 18):
+def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.8, ymax_lim = None, log = False, fontsize = 18, plottitle = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
 
     i = 0
-    ls = ['-', '--', ':', '-.', '-', '--', ':', '-.']
+    lst = ['-', '--', ':', '-.', '-', '--', ':', '-.']
+    colors = ['b', 'y', 'm', 'r', 'c', 'g', 'k', 'aqua']
     for a in x_arr:
         x = x_arr[i][1:]
         y = y_arr[i][1:]
-        if log:
-            ax.loglog(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i, basex = 10)
+        if len(x_arr) < 4:
+            lwt = 3.2 - i
         else:
-            ax.plot(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i)
+            lwt = 1.5 + i * 0.6
+
+        if log:
+            ax.loglog(x, y, linestyle = lst[i], linewidth = lwt, basex = 10, color = colors[i])
+        else:
+            ax.plot(x, y, linestyle = lst[i], linewidth = lwt, color = colors[i])
         i += 1
     # end for
 
@@ -287,9 +295,10 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
         else:
             y1 = ci05[i][1:]
             y2 = ci95[i][1:]
-            sd = 0.2 + i * 0.1
-            ax.plot(x, y1, x, y2, linestyle = '-', color = [sd, sd, sd], linewidth = 1.2)
-            ax.fill_between(x, y1, y2, where = y2 >= y1, facecolor = [sd, sd, sd], interpolate = True)
+            sd = 0.65 - i * 0.15
+
+            ax.plot(x, y1, x, y2, color = [sd, sd, sd], alpha = 0.0)
+            ax.fill_between(x, y1, y2, where = y2 > y1, facecolor = [sd, sd, sd], alpha = 1, interpolate = True, linewidth = 0.0)
         i += 1
 
     # ax.xaxis.grid(True, 'major')
@@ -297,7 +306,8 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     ax.grid(True)
     plt.ylabel(ylabel, fontsize = fontsize)
     plt.xlabel(xlabel, fontsize = fontsize)
-    plt.title(title, fontsize = fontsize)
+    if plottitle:
+        plt.title(title, fontsize = fontsize)
 
     if legend != None:
         plt.legend(legend);
@@ -313,7 +323,7 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
 # end
 
 
-def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6):
+def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plottitle = False):
 
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
     ax = fig.add_subplot(111)
@@ -331,7 +341,8 @@ def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6):
 
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
-    plt.title(title)
+    if plottitle:
+        plt.title(title)
     if legend != None:
         plt.legend(legend);
 
@@ -342,16 +353,17 @@ def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6):
     plt.show()
 # end
 
-def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6):
+def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.8, plottitle = False, fontsize = 18):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
 
     i = 0;
+    ls = ['-b', '--y', ':m', '-.r', '-c', '--g', ':k', '-.aqua']
     for a in x_arr:
         x = x_arr[i]
         y = y_arr[i]
-        ax.plot(x, y)
+        ax.plot(x, y, ls[i])
         i += 1
     # end for
 
@@ -363,15 +375,18 @@ def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewi
     # ax.xaxis.grid(True, 'major')
     ax.xaxis.grid(True, 'minor')
     ax.grid(True)
-    plt.ylabel(ylabel)
-    plt.xlabel(xlabel)
-    plt.title(title)
+    plt.ylabel(ylabel).set_fontsize(fontsize + 2)
+    plt.xlabel(xlabel).set_fontsize(fontsize + 2)
+    if plottitle:
+        plt.title(title).set_fontsize(fontsize + 2)
 
     if legend != None:
         plt.legend(legend);
     # rotates and right aligns the x labels, and moves the bottom of the
     # axes up to make room for them
     fig.autofmt_xdate()
+    plt.xticks(fontsize = fontsize - 4)
+    plt.yticks(fontsize = fontsize - 4)
     plt.show()
 # end
 

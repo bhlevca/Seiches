@@ -52,7 +52,8 @@ class FFTSpectralAnalysis(object):
     # end
 
 
-    def FourierAnalysis(self, filename, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False):
+    def FourierAnalysis(self, filename, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, \
+                        log = False, bResample = False, Time1 = None):
 
         '''
         FFT for Spectral Analysis
@@ -69,6 +70,10 @@ class FFTSpectralAnalysis(object):
         [Time, SensorDepth] = fft_utils.readFile(self.path_in, filename)
         Time = np.array(Time)
         SensorDepth = np.array(SensorDepth)
+        if bResample:
+            print "*** Resampling SensorDepth and Time from length: %d to length: %d" % (len(Time), len(Time1))
+            SensorDepth = sp.signal.resample(SensorDepth, len(Time1))
+            Time = sp.signal.resample(Time, len(Time1))
 
          # prepare for the amplitude spectrum analysis
         if tunits == 'day':

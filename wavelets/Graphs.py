@@ -18,9 +18,9 @@ from matplotlib.dates import date2num, num2date
 from matplotlib.dates import MONDAY, SATURDAY
 import matplotlib.dates
 
-years = matplotlib.dates.YearLocator()   # every year
+years = matplotlib.dates.YearLocator()  # every year
 months = matplotlib.dates.MonthLocator()  # every month
-yearsFmt = matplotlib.dates.DateFormatter('%Y') # every monday
+yearsFmt = matplotlib.dates.DateFormatter('%Y')  # every monday
 mondays = matplotlib.dates.WeekdayLocator(MONDAY)
 
 class Graphs(object):
@@ -60,7 +60,7 @@ class Graphs(object):
     def showGraph(self):
         plt.show()
 
-    def plotDateScalogram(self, scaleType = None, plotFreq = True):
+    def plotDateScalogram(self, scaleType = None, plotFreq = True, printtitle = False):
 
         fig, ax1, ax2, ax3 = self.plotScalogram(scaleType, plotFreq)
         formatter = matplotlib.dates.DateFormatter('%Y-%m-%d')
@@ -73,11 +73,11 @@ class Graphs(object):
         ax2.xaxis.grid(True, 'minor')
         fig.autofmt_xdate()
 
-    def plotScalogram(self, scaleType = None, plotFreq = True):
+    def plotScalogram(self, scaleType = None, plotFreq = True, printtitle = False):
         # approximate scales through frequencies
         # freq = (omega0 + np.sqrt(2.0 + omega0 ** 2)) / (4 * np.pi * scale[1:])
 
-        fig = plt.figure() # creating an empty Matplotlib figure
+        fig = plt.figure()  # creating an empty Matplotlib figure
 
         title = "Wavelets - Scalogram"
         # axis for the initial signal
@@ -95,48 +95,50 @@ class Graphs(object):
             if scaleType == 'log':
                 ax2.set_yscale(scaleType)
 
-        ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6], xlabel = "Magnitude") # axis for a colour bar
-        ax1.plot(self.Time, self.SensorDepthLake, 'k') # plotting the initial time series
+        ax3 = fig.add_axes([0.83, 0.1, 0.03, 0.6], xlabel = "Magnitude")  # axis for a colour bar
+        ax1.plot(self.Time, self.SensorDepthLake, 'k')  # plotting the initial time series
 
         # plotting a CWT data
         if plotFreq == True:
             img = ax2.pcolormesh(self.Time, self.freqLake, np.abs(self.lakeWavelet))
         else:
             img = ax2.imshow(np.abs(self.lakeWavelet), extent = [self.Time[0], self.Time[-1], self.scalesLake[-1], self.scalesLake[0]], aspect = 'auto')
-        fig.colorbar(img, cax = ax3) # building a colour bar basing on the colours present in CWT data image
+        fig.colorbar(img, cax = ax3)  # building a colour bar basing on the colours present in CWT data image
         # format the ticks
         ax2.grid(True)
         ax1.axis('tight')
         ax2.axis('tight')
-        #ax1.set_title(title)
+        if printtitle:
+            ax1.set_title(title)
         plt.draw()
         return [fig, ax1, ax2, ax3]
 
-    def plotSingleSideAplitudeSpectrumTime(self):
+    def plotSingleSideAplitudeSpectrumTime(self, printtitle = False):
         fig = plt.figure()
         power1 = (np.abs(self.lakeWavelet)) ** 2
 
         plt.title('Lake Amplitude (m)')
         A1 = np.sqrt(np.sum(power1, axis = 1) / self.SensorDepthLake.shape[0])
-        plt.plot(self.freqLake, A1)#* self.corrLake)
+        plt.plot(self.freqLake, A1)  # * self.corrLake)
         if self.filename2 != None:
-            plt.title('Wavelets - Lake and Bay Amplitude (m) / Time')
+            if printtitle:
+                plt.title('Wavelets - Lake and Bay Amplitude (m) / Time')
             power2 = (np.abs(self.bayWavelet)) ** 2
             A2 = np.sqrt(np.sum(power2, axis = 1) / self.SensorDepthBay.shape[0])
             plt.ylabel("Amplitude (m)")
             plt.xlabel("Time (hours)")
-            plt.plot(self.freqBay, A2)#* self.corrBay)
+            plt.plot(self.freqBay, A2)  # * self.corrBay)
             plt.legend(['Lake', 'Bay'])
         else:
             plt.legend(["Lake"])
 
-    def plotSingleSideAplitudeSpectrumFreq(self):
+    def plotSingleSideAplitudeSpectrumFreq(self, printtitle = False):
         fig = plt.figure()
         power1 = (np.abs(self.lakeWavelet)) ** 2
 
         plt.title('Wavelets - Lake Amplitude (m)')
         A1 = np.sqrt(np.sum(power1, axis = 1) / self.SensorDepthLake.shape[0])
-        plt.plot(1 / self.freqLake / 3600, A1)#* self.corrLake)
+        plt.plot(1 / self.freqLake / 3600, A1)  # * self.corrLake)
 
         if self.filename2 != None:
             plt.title('Wavelets - Lake and Bay Amplitude (m) /Freq')
@@ -144,11 +146,11 @@ class Graphs(object):
             A2 = np.sqrt(np.sum(power2, axis = 1) / self.SensorDepthBay.shape[0])
             plt.ylabel("Amplitude (m)")
             plt.xlabel("Freq (Hz)")
-            plt.plot(1 / self.freqBay / 3600, A2)#* self.corrBay)
+            plt.plot(1 / self.freqBay / 3600, A2)  # * self.corrBay)
             plt.legend(['Lake', 'Bay'])
         else:
             plt.legend(['Lake'])
-    #end plotSingleSideAplitudeSpectrumTime
+    # end plotSingleSideAplitudeSpectrumTime
 
 
 

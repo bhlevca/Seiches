@@ -41,7 +41,7 @@ from matplotlib.dates import date2num, num2date
 from matplotlib.dates import MONDAY, SATURDAY
 import matplotlib.dates
 
-years = matplotlib.dates.YearLocator()   # every year
+years = matplotlib.dates.YearLocator()  # every year
 months = matplotlib.dates.MonthLocator()  # every month
 yearsFmt = matplotlib.dates.DateFormatter('%Y')
 # every monday
@@ -67,27 +67,27 @@ class kCwt(object):
         @param var: the timeseries data, used for passing data directly, when not reading from a file
 
         '''
-        #Data members
+        # Data members
         self.mother = None
-        self.dj = 0.25                            # Four sub-octaves per octaves
-        self.s0 = -1 #2 * dt                      # Starting scale, here 6 months
-        self.J = -1 # 7 / dj                      # Seven powers of two with dj sub-octaves
-        self.alpha = 0.0                          # Lag-1 autocorrelation for white noise
-        self.std = None                           # Standard deviation
-        self.variance = None                      # Variance
-        self.N = None                             # timseries length
+        self.dj = 0.25  # Four sub-octaves per octaves
+        self.s0 = -1  # 2 * dt                      # Starting scale, here 6 months
+        self.J = -1  # 7 / dj                      # Seven powers of two with dj sub-octaves
+        self.alpha = 0.0  # Lag-1 autocorrelation for white noise
+        self.std = None  # Standard deviation
+        self.variance = None  # Variance
+        self.N = None  # timseries length
         self.freq = None
         self.period = None
         self.dt = None
         self.coi = None
-        self.power = None                         # Normalized wavelet power spectrum
-        self.iwave = None                         # inverse wavelet    
-        self.fft_power = None                     # FFT power spectrum
+        self.power = None  # Normalized wavelet power spectrum
+        self.iwave = None  # inverse wavelet
+        self.fft_power = None  # FFT power spectrum
         self.amplitude = None
         self.phase = None
         self.eps = None
-        self.SensorDepth = None                   # original time seriets
-        self.signal = None                        # detrended timeseries
+        self.SensorDepth = None  # original time seriets
+        self.signal = None  # detrended timeseries
         self.glbl_power = None
         self.glbl_signif = None
         self.units = None
@@ -96,7 +96,7 @@ class kCwt(object):
 
         if path != None and file != None:
             self.filename = file
-            #read Lake data
+            # read Lake data
             [self.Time, self.SensorDepth] = fft_utils.readFile(path, file)
             self.eps = (self.Time[1] - self.Time[0]) / 100
             self.SensorDepth = np.array(self.SensorDepth)
@@ -117,7 +117,7 @@ class kCwt(object):
         else:
             print "Wrong time units!"
             raise Exception('Error', 'Wrong time units!')
-        #change to seconds after calculating tfactor
+        # change to seconds after calculating tfactor
         self.tunits = 'sec'
 
 
@@ -156,7 +156,7 @@ class kCwt(object):
             self.mother = wavelet.DOG()
         elif motherW == 'morlet':
             self.mother = wavelet.Morlet(6.)
-        #[self.Time, SensorDepth1, X1, scales1, freq1, corr1 ] 
+        # [self.Time, SensorDepth1, X1, scales1, freq1, corr1 ]
         a = self._doSpectralAnalysisOnSeries()
         if slevel != None:
             self.get95Significance(slevel)
@@ -175,23 +175,23 @@ class kCwt(object):
         '''
 
         if self.dj == None:
-            self.dj = 0.25                            # Four sub-octaves per octaves
+            self.dj = 0.25  # Four sub-octaves per octaves
 
         if self.s0 == None:
-            self.s0 = -1 #2 * dt                      # Starting scale, here 6 months
+            self.s0 = -1  # 2 * dt                      # Starting scale, here 6 months
 
         if self.J == None:
-            self.J = -1 # 7 / dj                      # Seven powers of two with dj sub-octaves
+            self.J = -1  # 7 / dj                      # Seven powers of two with dj sub-octaves
 
         if self.alpha == None:
-            self.alpha = 0.0                          # Lag-1 autocorrelation for white noise
+            self.alpha = 0.0  # Lag-1 autocorrelation for white noise
 
         # 'dt' is a time step in the time series
         self.SensorDepth = mlab.detrend_linear(self.SensorDepth)
 
         self.dt = (self.Time[1] - self.Time[0]) * self.tfactor  # time is in days , convert to hours
-        self.std = np.std(self.SensorDepth)                     # Standard deviation
-        self.variance = self.std ** 2                 # Variance
+        self.std = np.std(self.SensorDepth)  # Standard deviation
+        self.variance = self.std ** 2  # Variance
 
         # normalize by standard deviation (not necessary, but makes it easier
         # to compare with plot on Interactive Wavelet page, at
@@ -207,11 +207,11 @@ class kCwt(object):
         self.iwave = wavelet.icwt(wave, self.scales, self.dt, self.dj, self.mother)
         self.N = self.SensorDepth.shape[0]
 
-        #calculate power and amplitude spectrogram 
-        self.power = (np.abs(wave)) ** 2                         # Normalized wavelet power spectrum
-        self.fft_power = self.variance * np.abs(self.fft) ** 2   # FFT power spectrum
-        self.amplitude = self.std * np.abs(wave) / 2.            # we use only half of the symmetrical 
-                                                                 #spectrum therefore divide by 2 
+        # calculate power and amplitude spectrogram
+        self.power = (np.abs(wave)) ** 2  # Normalized wavelet power spectrum
+        self.fft_power = self.variance * np.abs(self.fft) ** 2  # FFT power spectrum
+        self.amplitude = self.std * np.abs(wave) / 2.  # we use only half of the symmetrical
+                                                                 # spectrum therefore divide by 2
         self.phase = np.angle(wave)
 
         self.period = 1. / self.freq
@@ -225,12 +225,12 @@ class kCwt(object):
                                                  significance_level = slevel, wavelet = self.mother)
 
         sig95 = (signif * np.ones((self.N, 1))).transpose()
-        self.sig95 = self.power / sig95                # Where ratio > 1, power is significant
+        self.sig95 = self.power / sig95  # Where ratio > 1, power is significant
         return self.sig95
 
     def getGlobalSpectrum(self, slevel):
         self.glbl_power = self.variance * self.power.mean(axis = 1)
-        dof = self.N - self.scales                     # Correction for padding at edges
+        dof = self.N - self.scales  # Correction for padding at edges
         self.glbl_signif, tmp = wavelet.significance(self.variance, self.dt, self.scales, 1, self.alpha, \
                                                 significance_level = slevel, dof = dof, wavelet = self.mother)
 
@@ -256,25 +256,25 @@ class kCwt(object):
         sel = pylab.find((self.period >= avg1) & (self.period < avg2))
         Cdelta = self.mother.cdelta
 
-        #ones: Return a new array of given shape and type, filled with ones.
-        scale_avg = (self.scales * np.ones((self.N, 1))).transpose() # expand scale --> (J+1)x(N) array
-        scale_avg = self.power / scale_avg                           #[Eqn(24) Torrence & Compo (1998)
+        # ones: Return a new array of given shape and type, filled with ones.
+        scale_avg = (self.scales * np.ones((self.N, 1))).transpose()  # expand scale --> (J+1)x(N) array
+        scale_avg = self.power / scale_avg  # [Eqn(24) Torrence & Compo (1998)
 
-        # Cdelta = shape factor depeding on the wavelet used.  
+        # Cdelta = shape factor depeding on the wavelet used.
         #
-        # To examine fluctuations in power over a range of scales/frequencies one can define a 
-        # scale averaged wavelet power" as a weighted sum of power spectrum over scales s1 to s2 
-        # here defined by the selected between avg1 and avg2 
-        #]
+        # To examine fluctuations in power over a range of scales/frequencies one can define a
+        # scale averaged wavelet power" as a weighted sum of power spectrum over scales s1 to s2
+        # here defined by the selected between avg1 and avg2
+        # ]
         # By comparing [24] with [Eq 14] it can be shown that self.scale_avg is the average variance in a certain band
-        # Here W[n]^2/s[j] = self.power / scale_avg , when n is the time index 
+        # Here W[n]^2/s[j] = self.power / scale_avg , when n is the time index
         # sum(axis=0)  = sum over the scales
         #
-        # Note: This can be used to examine the modulation of one time series by another or modulation of one frequency 
+        # Note: This can be used to examine the modulation of one time series by another or modulation of one frequency
         #       by another within the same timeseries (pag 73 Terrence & Compo (1998))
-        self.scale_avg = self.variance * self.dj * self.dt / Cdelta * scale_avg[sel, :].sum(axis = 0) # [Eqn(24)]
+        self.scale_avg = self.variance * self.dj * self.dt / Cdelta * scale_avg[sel, :].sum(axis = 0)  # [Eqn(24)]
 
-        #calculate the significant level for the averaged scales to represent the 95% (slevel) confidence interval
+        # calculate the significant level for the averaged scales to represent the 95% (slevel) confidence interval
         self.scale_avg_signif, tmp = wavelet.significance(self.variance, self.dt, self.scales, 2, self.alpha,
                             significance_level = slevel, dof = [self.scales[sel[0]],
                             self.scales[sel[-1]]], wavelet = self.mother)
@@ -351,7 +351,7 @@ class kCwt(object):
         plt.show()
 
 
-    def plotSpectrogram(self, ylabel_ts, units_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2):
+    def plotSpectrogram(self, ylabel_ts, units_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2, raw = False):
         '''
          The following routines plot the results in four different subplots containing:
          - the original series,
@@ -373,59 +373,72 @@ class kCwt(object):
           @return: None
 
         '''
-
+        fontsize = 17
         pylab.close('all')
-        fontsize = 'medium'
+        # fontsize = 'medium'
         params = {'text.fontsize': fontsize,
                   'xtick.labelsize': fontsize,
                   'ytick.labelsize': fontsize,
                   'axes.titlesize': fontsize,
+                  'axes.labelsize': fontsize,
                   'text.usetex': True
                  }
-        pylab.rcParams.update(params)          # Plot parameters
+        pylab.rcParams.update(params)  # Plot parameters
         figprops = dict(figsize = (11, 8), dpi = 96)
         fig = plt.figure(**figprops)
         self.units = units_ts
         # First sub-plot, the original time series anomaly.
 
-        ax = fig.add_axes([0.1, 0.75, 0.65, 0.2])
 
-        #Plot the reconstructed signal. They are close to the original in case of simple signals. 
-        #The longer and more complex the signal is the more difficult is to cecomstruct. 
-        #The reconstructed signal is usually symmetrical 
-        ax.plot(self.Time, self.iwave, '-', linewidth = 1, color = [0.5, 0.5, 0.5])
 
-        #Plot the original signal
-        ax.plot(self.Time, self.SensorDepth, 'k', linewidth = 1.5)
+        if raw :
+            ax = fig.add_axes([0.1, 0.75, 0.64, 0.2])
+            # Plot the reconstructed signal. They are close to the original in case of simple signals.
+            # The longer and more complex the signal is the more difficult is to cecomstruct.
+            # The reconstructed signal is usually symmetrical
+            ax.plot(self.Time, self.iwave, '-', linewidth = 1, color = [0.5, 0.5, 0.5])
 
-        ax.set_title('a) %s' % (self.title,))
-        if self.units != '':
-          ax.set_ylabel(r'%s [$%s$]' % (ylabel_ts, self.units,))
-        else:
-          ax.set_ylabel(r'%s' % (ylabel_ts,))
+            # Plot the original signal
+            ax.plot(self.Time, self.SensorDepth, 'k', linewidth = 1.5)
 
-        if x_type == 'date':
-            formatter = matplotlib.dates.DateFormatter('%Y-%m-%d')
-            ax.xaxis.set_major_formatter(formatter)
-            ax.xaxis.set_minor_locator(mondays)
-            ax.xaxis.grid(True, 'minor')
-            fig.autofmt_xdate()
+            ax.set_title('a) %s' % (self.title,))
+            if self.units != '':
+              ax.set_ylabel(r'%s [$%s$]' % (ylabel_ts, self.units,))
+            else:
+              ax.set_ylabel(r'%s' % (ylabel_ts,))
 
         # Second sub-plot, the normalized wavelet power spectrum and significance level
         # contour lines and cone of influece hatched area.
-        bx = fig.add_axes([0.1, 0.37, 0.65, 0.28], sharex = ax)
+        if raw:
+            bx = fig.add_axes([0.1, 0.37, 0.64, 0.28], sharex = ax)
+        else :
+            bx = fig.add_axes([0.1, 0.55, 0.64, 0.38])
+
+        if x_type == 'date':
+            formatter = matplotlib.dates.DateFormatter('%Y-%m-%d')
+            if raw:
+                axis = ax
+            else :
+                axis = bx
+
+            axis.xaxis.set_major_formatter(formatter)
+            axis.xaxis.set_minor_locator(mondays)
+            axis.xaxis.grid(True, 'minor')
+
+            fig.autofmt_xdate()
 
 
-        #levels = [0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16]
+
+        # levels = [0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16]
         if sc_type == 'freq':
             y_scales = self.freq
         else:
             y_scales = self.period
-            #levels = np.arange(np.log2(self.period.min()), np.log2(self.period.max()), (np.log2(self.period.max()) - np.log2(self.period.min())) / 10)
+            # levels = np.arange(np.log2(self.period.min()), np.log2(self.period.max()), (np.log2(self.period.max()) - np.log2(self.period.min())) / 10)
 
 
 
-        sel = pylab.find((y_scales >= val1) & (y_scales < val2)) #indices of selected data sales or freq 
+        sel = pylab.find((y_scales >= val1) & (y_scales < val2))  # indices of selected data sales or freq
         y_scales = y_scales[sel[0]:sel[len(sel) - 1] + 1]
         power = self.power[sel[0]:sel[len(sel) - 1] + 1]
         sig95 = self.sig95 [sel[0]:sel[len(sel) - 1] + 1]
@@ -434,36 +447,41 @@ class kCwt(object):
 
         levels = np.arange(power.min(), power.max() + power.min(), (power.max() - power.min()) / 32)
 
-        #im = bx.contourf(self.Time, np.log2(y_scales), np.log2(power), np.log2(levels), cmap = cm.jet, extend = 'both')
+        # im = bx.contourf(self.Time, np.log2(y_scales), np.log2(power), np.log2(levels), cmap = cm.jet, extend = 'both')
         im = bx.contourf(self.Time, np.log2(y_scales), np.log2(power), 32, cmap = cm.jet, extend = 'both')
 
-        #For out of levels representation enable the following two lines.
-        #However, the above lines need to define the required levels
-        #im.cmap.set_under('yellow')
-        #im.cmap.set_over('cyan')
+        # For out of levels representation enable the following two lines.
+        # However, the above lines need to define the required levels
+        # im.cmap.set_under('yellow')
+        # im.cmap.set_over('cyan')
 
         bx.contour(self.Time, np.log2(y_scales), sig95, [-99, 1], colors = 'k', linewidths = 2.1)
 
         bx.fill(np.concatenate([self.Time[:1] - self.dt, self.Time, self.Time[-1:] + self.dt, \
                                 self.Time[-1:] + self.dt, self.Time[:1] - self.dt, self.Time[:1] - self.dt]), \
                                 np.log2(np.concatenate([[1e-9], self.coi, [1e-9], y_scales[-1:], y_scales[-1:], [1e-9]]))\
-                                , 'k', alpha = '0.3', hatch = 'x')
+                                , 'k', alpha = 0.3, hatch = 'x')
 
-        #for testing only
-        #fig.colorbar(im) - if present it will shift the scales
-        bx.set_title('b) Wavelet Power Spectrum (%s)' % (self.mother.name))
+
+
+        # for testing only
+        # fig.colorbar(im) - if present it will shift the scales
+        if raw:
+            bx.set_title('b) Wavelet Power Spectrum (%s)' % (self.mother.name))
+        else:
+            bx.set_title('a) Wavelet Power Spectrum (%s) - %s' % (self.mother.name, self.title))
         bx.set_ylabel(ylabel_sc)
         Yticks = np.arange(y_scales.min(), y_scales.max(), (y_scales.max() - y_scales.min()) / 16)
 
 
-        #formatter = FormatStrFormatter('%2.4f')
-        #bx.yaxis.set_major_formatter(formatter)
+        # formatter = FormatStrFormatter('%2.4f')
+        # bx.yaxis.set_major_formatter(formatter)
         Yticks = 2 ** np.arange(np.ceil(np.log2(y_scales.min())),
                            np.ceil(np.log2(y_scales.max())))
         bx.set_yticks(np.log2(Yticks))
         bx.set_yticklabels(Yticks)
-        #formatter = FuncFormatter(self.scinot)
-        #bx.yaxis.set_major_formatter(formatter)
+        # formatter = FuncFormatter(self.scinot)
+        # bx.yaxis.set_major_formatter(formatter)
         bx.invert_yaxis()
         if x_type == 'date':
             bx.xaxis.set_major_formatter(formatter)
@@ -474,18 +492,24 @@ class kCwt(object):
         # Third sub-plot, the global wavelet and Fourier power spectra and  kwavelet.tunitstheoretical
         # noise spectra.
 
-        cx = fig.add_axes([0.77, 0.37, 0.2, 0.28], sharey = bx)
+        if raw:
+            cx = fig.add_axes([0.78, 0.37, 0.19, 0.28], sharey = bx)
+        else :
+            cx = fig.add_axes([0.78, 0.55, 0.19, 0.38], sharey = bx)
 
-        #plot the Fourier power spectrum first
+        # plot the Fourier power spectrum first
         cx.plot(self.fft_power, np.log2(1. / self.fftfreqs), '-', color = [0.6, 0.6, 0.6], linewidth = 1.)
 
         # plot the wavelet global ower
         cx.plot(glbl_power, np.log2(y_scales), 'k-', linewidth = 1.5)
 
-        #the line of chosen significance, ususaly 95%
+        # the line of chosen significance, ususaly 95%
         cx.plot(glbl_signif, np.log2(y_scales), 'k-.')
 
-        cx.set_title('c) Global Wavelet Spectrum')
+        if raw:
+            cx.set_title('c) Global Wavelet Spectrum')
+        else:
+            cx.set_title('b) Global Wavelet Spectrum')
         if self.units != '':
           cx.set_xlabel(r'Power [$%s^2$]' % (self.units,))
         else:
@@ -496,7 +520,7 @@ class kCwt(object):
         cx.set_yticks(np.log2(Yticks))
         cx.set_yticklabels(Yticks)
 
-        #cx.yaxis.set_major_formatter(formatter)
+        # cx.yaxis.set_major_formatter(formatter)
 
         pylab.setp(cx.get_yticklabels(), visible = False)
         cx.invert_yaxis()
@@ -504,13 +528,18 @@ class kCwt(object):
         # Fourth sub-plot, the scale averaged wavelet spectrum as determined by the
         # avg1 and avg2 parameters
 
-        dx = fig.add_axes([0.1, 0.07, 0.65, 0.2], sharex = ax)
+        if raw :
+            dx = fig.add_axes([0.1, 0.07, 0.64, 0.2], sharex = ax)
+        else :
+            dx = fig.add_axes([0.1, 0.07, 0.64, 0.3], sharex = bx)
         dx.axhline(self.scale_avg_signif, color = 'k', linestyle = '--', linewidth = 1.)
 
-        #plot the scale average for each time point.
+        # plot the scale average for each time point.
         dx.plot(self.Time, self.scale_avg, 'k-', linewidth = 1.5)
-        dx.set_title('d) $%.4f$-$%.4f$ (%s) Scale-averaged power' % (self.avg1, self.avg2, self.tunits))
-
+        if raw:
+            dx.set_title('d) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
+        else:
+            dx.set_title('c) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
         xlabel = 'Time (%s)' % self.tunits
         dx.set_xlabel(xlabel)
         if self.units != '':
@@ -524,24 +553,24 @@ class kCwt(object):
             dx.xaxis.grid(True, 'minor')
             fig.autofmt_xdate()
 
-        ax.set_xlim([self.Time.min(), self.Time.max()])
+            axis.set_xlim([self.Time.min(), self.Time.max()])
         #
 
-        pylab.draw()
+        # pylab.draw()
         pylab.show()
 
 
-#test class 
+# test class
 if __name__ == '__main__':
     '''
     Testing ground for local functions
     '''
 
-    #1) Test true amplitude
-    Fs = 1000.0                     # Sampling frequency
-    T = 1.0 / Fs                    # Sample time
-    L = 1024                         # Length of signal
-    t = np.array(range(0, L)) * T                # Time vector
+    # 1) Test true amplitude
+    Fs = 1000.0  # Sampling frequency
+    T = 1.0 / Fs  # Sample time
+    L = 1024  # Length of signal
+    t = np.array(range(0, L)) * T  # Time vector
     # Sum of a 50 Hz sinusoid and a 120 Hz sinusoid
     x = np.array([])
     x1 = 0.7 * np.sin(2 * np.pi * 40 * t)
@@ -553,7 +582,7 @@ if __name__ == '__main__':
             else:
                 x[i] = 4.0 * np.sin(2 * np.pi * 120 * t[i])
         return x
-    #x2 = 4.0 * np.sin(2 * np.pi * 120 * t)
+    # x2 = 4.0 * np.sin(2 * np.pi * 120 * t)
     x2 = fun(t)
     x3 = 8.0 * np.sin(2 * np.pi * 200 * t)
     x4 = 6.0 * np.sin(2 * np.pi * 400 * t)
@@ -561,25 +590,25 @@ if __name__ == '__main__':
     xlabel = 'time (milliseconds)'
     x = (x1 + x2 + x3 + x4)
 
-    avg1, avg2 = (0.001, 0.03)           # Range of periods to average
-    slevel = 0.95                        # Significance level
+    avg1, avg2 = (0.001, 0.03)  # Range of periods to average
+    slevel = 0.95  # Significance level
     tunits = 'sec'
-    #tunits = '^{\circ}C'
+    # tunits = '^{\circ}C'
     kwavelet = kCwt(None, None, tunits, time = t, var = x)
 
-    dj = 0.025                           # Four sub-octaves per octaves
-    s0 = -1 #2 * dt                      # Starting scale, here 6 months
-    J = -1 # 7 / dj                      # Seven powers of two with dj sub-octaves
-    alpha = 0.0                          # Lag-1 autocorrelation for white noise
+    dj = 0.025  # Four sub-octaves per octaves
+    s0 = -1  # 2 * dt                      # Starting scale, here 6 months
+    J = -1  # 7 / dj                      # Seven powers of two with dj sub-octaves
+    alpha = 0.0  # Lag-1 autocorrelation for white noise
     kwavelet.doSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
     ylabel_ts = "amplitude"
     yunits_ts = 'mm'
     xlabel_sc = ""
     ylabel_sc = 'Period (%s)' % kwavelet.tunits
-    #ylabel_sc = 'Freq (Hz)'
+    # ylabel_sc = 'Freq (Hz)'
     sc_type = "period"
-    #sc_type = "freq"
-    val1, val2 = (0.001, 0.02)         # Range of sc_type (ex periods) to plot in spectogram
+    # sc_type = "freq"
+    val1, val2 = (0.001, 0.02)  # Range of sc_type (ex periods) to plot in spectogram
     x_type = 'time'
     kwavelet.plotSpectrogram(ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
     kwavelet.plotAmplitudeSpectrogram(ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)

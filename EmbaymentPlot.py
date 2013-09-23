@@ -169,8 +169,8 @@ class EmbaymentPlot(object):
             print ('SOLUTION FOR z\"+n*w*a*z\'-w0^2*z=w0^2*ze')
             print('Width: %f') % self.B
 
-            tmax = days * 86400;  # 5days
-            nt = 2880;  # 24h 12*24 = 12 intervals of 5 mins * 24 h
+            tmax = days * 86400;
+            nt = days * 24 * 12;  # 12*24*days = 12 intervals of 5 mins * 24 h * days
             x0 = 0.0; v0 = 0;
             m = 1  # unit of mass
 
@@ -226,7 +226,7 @@ class EmbaymentPlot(object):
             return [t, self.X, self.c, self.k, self.w, x0, v0, R]
         # end Response
 
-    def plotForcingResponse(self, t):
+    def plotForcingResponse(self, t, printtitle = False):
         '''
         Plot individual frequency responses
         '''
@@ -241,13 +241,15 @@ class EmbaymentPlot(object):
         for i in range(0, len(self.Amplitude)):
             nPoints = 1300
             ax[i].plot((t[0:nPoints] + self.tsup[i]) / 3600, self.X[i][0:nPoints])
-            ax[i].set_xlabel('Time (h)').set_fontsize(20)
+            ax[i].set_xlabel('Time (h)').set_fontsize(22)
             ax[i].plot(t[0:nPoints] / 3600, self.fwave[i][0:nPoints], '-.r')
 
-            ax[i].legend(['bay', 'lake'], fontsize = '16')
-            title = 'Response embayment: %s - Forcing: a=%5.3f (m), T=%5.2f (h)' % (self.location_name, self.Amplitude[i], self.Period[i])
-            ax[i].set_title(title)
-            ax[i].set_ylabel('Displ. (m)').set_fontsize(20)
+            ax[i].legend(['bay', 'lake'], fontsize = '18')
+            if printtitle:
+                title = 'Response embayment: %s - Forcing: a=%5.3f (m), T=%5.2f (h)' % (self.location_name, self.Amplitude[i], self.Period[i])
+                ax[i].set_title(title)
+
+            ax[i].set_ylabel('Displ. (m)').set_fontsize(22)
             ax[i].grid(True)
             mn1 = np.min(self.X[i][0:nPoints])
             mn2 = np.min(self.fwave[i][0:nPoints])
@@ -263,7 +265,7 @@ class EmbaymentPlot(object):
         # end for
 
 
-    def plotRespVsOmegaVarAmplit(self):
+    def plotRespVsOmegaVarAmplit(self, printtitle = False):
         # Plot the response |G(w)| versus frequency (omega)
 
         if self.w0 == None:
@@ -293,14 +295,16 @@ class EmbaymentPlot(object):
 
         fig = plt.figure(facecolor = 'w', edgecolor = 'k')
         legend = []
-        title = 'Hypothetical Response for main forcings - Embayment: %s' % self.location_name
-        plt.title(title).set_fontsize(20)
-        plt.ylabel('|G(w)| (m)').set_fontsize(16)
+        if printtitle:
+            title = 'Hypothetical Response for main forcings - Embayment: %s' % self.location_name
+            plt.title(title).set_fontsize(20)
+
+        plt.ylabel('|G(w)| (m)').set_fontsize(22)
         xlabel = '%s/%s' % (omega, omega0)
         plt.xlabel(xlabel).set_fontsize(22)
         plt.grid(True)
-        plt.xticks(fontsize = 18)
-        plt.yticks(fontsize = 18)
+        plt.xticks(fontsize = 20)
+        plt.yticks(fontsize = 20)
 
         eps = self.w0 / 8.
         for i in range(0, len(self.Amplitude)):
@@ -321,10 +325,10 @@ class EmbaymentPlot(object):
         # Superimposed response
         # plt.plot(om / self.w0, abs(GT))
 
-        plt.legend(legend, fontsize = '16')
+        plt.legend(legend, fontsize = '18')
 
 
-    def plotRespVsOmegaVarFric(self):
+    def plotRespVsOmegaVarFric(self, printtitle = False):
         '''Plot the response |G(w)| versus frequency (omega)
            for various levels of friction
         '''
@@ -358,14 +362,16 @@ class EmbaymentPlot(object):
 
         fig = plt.figure(facecolor = 'w', edgecolor = 'k')
         legend = []
-        title = 'Hypothetical response for variable friction - Embayment: %s' % self.location_name
-        plt.title(title).set_fontsize(16)
-        plt.ylabel('|G(w)| (m)').set_fontsize(20)
+        if printtitle:
+            title = 'Hypothetical response for variable friction - Embayment: %s' % self.location_name
+            plt.title(title).set_fontsize(18)
+
+        plt.ylabel('|G(w)| (m)').set_fontsize(22)
         xlabel = '%s/%s' % (omega, omega0)
         plt.xlabel(xlabel).set_fontsize(22)
         plt.grid(True)
-        plt.xticks(fontsize = 18)
-        plt.yticks(fontsize = 18)
+        plt.xticks(fontsize = 20)
+        plt.yticks(fontsize = 20)
 
         for i in range(0, Nfric):
             plt.plot(om / self.w0, abs(self.G[i]), ls[i], lw = (Nfric + 2) - i)
@@ -374,10 +380,10 @@ class EmbaymentPlot(object):
 
         # end for
         # plt.plot(om / w0, abs(GT))
-        plt.legend(legend, fontsize = '16')
+        plt.legend(legend, fontsize = '18')
 
 
-    def plotPhaseVsOmega(self):
+    def plotPhaseVsOmega(self, printtitle = False):
         '''Plot the Phase diagram
             variable amplitude
         '''
@@ -413,14 +419,16 @@ class EmbaymentPlot(object):
         T0 = 2 * np.pi / self.w0 / 3600
         T = 2 * np.pi / om / 3600
 
-        title = 'Phase lag - Embayment: %s' % self.location_name
-        plt.title(title).set_fontsize(16)
-        plt.ylabel('Phase (rad)').set_fontsize(20)
+        if printtitle:
+            title = 'Phase lag - Embayment: %s' % self.location_name
+            plt.title(title).set_fontsize(18)
+
+        plt.ylabel('Phase (rad)').set_fontsize(22)
         xlabel = '%s/%s' % (omega, omega0)
         plt.xlabel(xlabel).set_fontsize(22)
         plt.grid(True)
-        plt.xticks(fontsize = 18)
-        plt.yticks(fontsize = 18)
+        plt.xticks(fontsize = 20)
+        plt.yticks(fontsize = 20)
 
         for i in range(0, fricsize):
             plt.plot(T0 / T, PHI[i], ls[i], lw = (fricsize + 2) - i)
@@ -428,10 +436,10 @@ class EmbaymentPlot(object):
             legend.append(lgnd)
         # end for
 
-        plt.legend(legend, loc = 4, fontsize = '16')
+        plt.legend(legend, loc = 4, fontsize = '18')
 
 
-    def plotRespVsOmegaVarArea(self):
+    def plotRespVsOmegaVarArea(self, printtitle = False):
         '''Plot the response |G(w)| versus frequency (omega)
            for various embayment areas
         '''
@@ -455,14 +463,16 @@ class EmbaymentPlot(object):
 
         fig = plt.figure(facecolor = 'w', edgecolor = 'k')
         legend = []
-        title = 'Hypothetical response for variable area - Embayment: %s' % self.location_name
-        plt.title(title).set_fontsize(16)
-        plt.ylabel('|G(w)| (m)').set_fontsize(20)
+        if printtitle:
+            title = 'Hypothetical response for variable area - Embayment: %s' % self.location_name
+            plt.title(title).set_fontsize(18)
+
+        plt.ylabel('|G(w)| (m)').set_fontsize(22)
         xlabel = '%s/%s' % (omega, omega0)
         plt.xlabel(xlabel).set_fontsize(22)
         plt.grid(True)
-        plt.xticks(fontsize = 18)
-        plt.yticks(fontsize = 18)
+        plt.xticks(fontsize = 20)
+        plt.yticks(fontsize = 20)
 
         # variable friction
         for i in range(0, ntimes):
@@ -496,9 +506,9 @@ class EmbaymentPlot(object):
 
         # end for
         # plt.plot(om / w0, abs(GT))
-        plt.legend(legend, fontsize = '16')
+        plt.legend(legend, fontsize = '18')
 
-    def plotRespVsOmegaVarMouth(self):
+    def plotRespVsOmegaVarMouth(self, printtitle = False):
         '''Plot the response |G(w)| versus frequency (omega)
            for various mouth areas
         '''
@@ -522,14 +532,17 @@ class EmbaymentPlot(object):
 
         fig = plt.figure(facecolor = 'w', edgecolor = 'k')
         legend = []
-        title = 'Hypothetical response for variable area - Embayment: %s' % self.location_name
-        plt.title(title).set_fontsize(16)
-        plt.ylabel('|G(w)| (m)').set_fontsize(20)
+
+        if printtitle:
+            title = 'Hypothetical response for variable area - Embayment: %s' % self.location_name
+            plt.title(title).set_fontsize(18)
+
+        plt.ylabel('|G(w)| (m)').set_fontsize(22)
         xlabel = '%s/%s' % (omega, omega0)
         plt.xlabel(xlabel).set_fontsize(22)
         plt.grid(True)
-        plt.xticks(fontsize = 18)
-        plt.yticks(fontsize = 18)
+        plt.xticks(fontsize = 20)
+        plt.yticks(fontsize = 20)
 
         # variable friction
         for i in range(0, ntimes):
@@ -563,9 +576,9 @@ class EmbaymentPlot(object):
 
         # end for
         # plt.plot(om / w0, abs(GT))
-        plt.legend(legend, fontsize = '16')
+        plt.legend(legend, fontsize = '18')
 
-    def plotRespVsOmegaVarMouthCurves(self):
+    def plotRespVsOmegaVarMouthCurves(self, printtitle = False):
         '''Plot the response |G(w)| versus frequency (omega)
            for various mouth areas
         '''
@@ -650,7 +663,7 @@ class EmbaymentPlot(object):
         y = np.array(RelativeAmplit)
         [r2, slope, intercept, r_value, p_value, std_err] = ustats.rsquared(x, y)
         ustats.plot_regression(x, y, slope, intercept, point_labels = None, x_label = "Mouth area m$^2$", y_label = "Relative amplitude", title = None, \
-                    r_value = r_value, p_value = p_value, fontsize = 20)
+                    r_value = r_value, p_value = p_value, fontsize = 22)
 
         # for no outliers
         [MouthArea2, RelativeAmplit2, Name2, Area2] = tg.readFile(path, filename2)
@@ -663,18 +676,18 @@ class EmbaymentPlot(object):
         [r2, slope, intercept, r_value, p_value, std_err] = ustats.rsquared(x, y)
         # pass the regression line params for no outliers
         ustats.plot_regression(x, y, slope2, intercept2, point_labels = None, x_label = "Area ha", y_label = "Relative amplitude", title = None, \
-                    r_value = r_value2, p_value = p_value2, fontsize = 20)
+                    r_value = r_value2, p_value = p_value2, fontsize = 22)
 
     # end def
 
-    def plotDimensionlessResponse(self, bbox = None):
+    def plotDimensionlessResponse(self, bbox = None, printtitle = False):
 
 
         embayments = {'FMB' : {'A':850000., 'B':25. , 'H':1., 'L':130.,
-                       'Period':[12.2, 5.065, 1.38, 0.81, 0.48] ,  # h
-                       'Amplitude':[0.0365, 0.023, 0.015, 0.018, 0.016],  # m
-                       'Amplitude_bay':[0.0365, 0.023, 0.015, 0.018, 0.016],  # m
-                       'Phase':[5, 22, -15, 39, -4.6],  # rad
+                       'Period':[12.4, 5.2, 1.28, 0.8, 0.5, 0.36] ,  # h
+                       'Amplitude':[0.034, 0.022, 0.017, 0.023, 0.021, 0.022],  # m
+                       'Amplitude_bay':[0.024, 0.02, 0.014, 0.012, 0.0045, 0.002],  # m
+                       'Phase':[5, 22, -15, 39, -4.6, 0],  # rad
                        'CD':0.0032},
               'Tob-IBP' : {'A':145000., 'B':140. , 'H':2.143, 'L':570.,
                        'Period':[16.8 / 60, 12.0 / 60, 8.0 / 60] ,  # min
@@ -695,10 +708,10 @@ class EmbaymentPlot(object):
         plt.figure()
 
         start = 0.0;
-        stop = 3;
+        stop = 3.5;
         step = 0.02;
         A_stop = 52;
-        A_start = 0.05;
+        A_start = 0.04;
         A_step = 5;
 
         maxidx = (stop - start) / step
@@ -721,8 +734,8 @@ class EmbaymentPlot(object):
         ixa = 0
         w = np.linspace(start, stop, (stop - start) / step)
         wint = np.linspace(start, stop, (stop - start) / step * 4)
-        linestyle = ['r-', 'g:', 'b--', 'k-.', 'y-', 'c--']
-        marker = ['o', 's', '+', '^', '*', 'd']
+        linestyle = ['r-', 'g:', 'b--', 'k-.', 'y-', 'c--', 'm:']
+        marker = ['o', '*', '^', 'd', 's', '+', 'o']
 
         A = A_start
         cellgr = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
@@ -733,7 +746,6 @@ class EmbaymentPlot(object):
            colr = np.mod(ixa, 6)
            ls = linestyle[colr]
            mk = marker[colr]
-           fint = interp1d(w, ac[:len(w)], kind = 'cubic')
            plt.plot(w, ac[:len(w)], ls, lw = 2 + 0.4 * ixa)
            gg = 'forcing=%5.2f' % A
            cellgr[ixa] = gg
@@ -741,14 +753,32 @@ class EmbaymentPlot(object):
            ixa += 1
            A = A * 3
         # end
-        plt.title('Amplification factor for a dimensionless forcing')
-        xlabel = 'Dimensionless Frequency %s/%s' % (omega, omega0)
-        plt.xlabel(xlabel)  # , fontsize = 16)
+        if printtitle:
+            plt.title('Amplification factor for a dimensionless forcing')
+        xlabel = 'Dimensionless Frequency (%s/%s)' % (omega, omega0)
+        plt.xlabel(xlabel, fontsize = 22)
         ylabel = 'Relative Dimensionless Amplitude (%s/%s)' % (alpha, alphae)
-        plt.ylabel(ylabel)  # , fontsize = 16)
-
+        plt.ylabel(ylabel, fontsize = 22)
+        plt.grid(True, which = 'major', axis = 'y')
         plt.legend(legend)
 
+
+        # dimesionless values
+        pmax = 0
+        for key, value in embayments.iteritems():
+            pmax += len(value['Period'])
+        # end for
+        ratioMeas = np.zeros(pmax, dtype = np.float)
+        ratioCalc = np.zeros(pmax, dtype = np.float)
+        ratioMeasNoOutl = np.zeros(pmax, dtype = np.float)
+        ratioCalcNoOutl = np.zeros(pmax, dtype = np.float)
+        outliers_emb = ['TOB-IBP', 'TOB-IBP']
+        outliers_freq = ['0.13', '0.20']
+
+        stxt = np.zeros(pmax, dtype = np.dtype('a14'))
+
+
+        j = 0
         for key, value in embayments.iteritems():
 
             name = key
@@ -773,10 +803,10 @@ class EmbaymentPlot(object):
             O = B * H
             fm = L * (f / L + CD / H)
             i = 0
-
+            ko = 0
             for T in Period:
-                AmplE = Amplitude[i]
-                DAmplE = A * fm / O / L * AmplE
+                k = j * len(embayments) + i
+                DAmplE = A * fm / O / L * Amplitude[i]
                 DAmplBay = A * fm / O / L * Amplitude_bay[i]
                 w0 = np.sqrt(g * O / L / A)
                 freq = 1 / (T * 3600)
@@ -785,21 +815,53 @@ class EmbaymentPlot(object):
                 wp = w / w0
 
                 # measured forcing
-                ratio = DAmplBay / DAmplE
-                plt.plot(wp, ratio, marker[i])
+                ratioMeas[k] = DAmplBay / DAmplE
+                print "%d) rmeas:%f" % (k, ratioMeas[k]),
+                plt.plot(wp, ratioMeas[k], marker = marker[i], markersize = 13)
                 txt = '%s_M(%.2f h)' % (name, T)
-                plt.text(wp + 0.02, ratio, txt, ha = 'left', va = 'center', bbox = bbox_props, fontsize = 14)
+                plt.text(wp + 0.02, ratioMeas[k], txt, ha = 'left', va = 'center', bbox = bbox_props, fontsize = 13)
 
 
                 # draw veritical line at omega zero
 
                 # calculated forcing
-                dlresponse = self.dl_amplitudef(DAmplE, wp)
-                ratio = dlresponse / DAmplE
-                plt.plot(wp, ratio, marker[i])
+                DCalcAmplBay = self.dl_amplitudef(DAmplE, wp)
+                ratioCalc[k] = DCalcAmplBay / DAmplE
+                print "  rcalc:%f" % ratioCalc[k]
+                plt.plot(wp, ratioCalc[k], marker = marker[i], markersize = 13)
                 txt = '%s_C(%.2f h)' % (name, T)
-                plt.text(wp + 0.02, ratio, txt, ha = 'left', va = 'center', bbox = bbox_props, fontsize = 14)
+                plt.text(wp + 0.02, ratioCalc[k], txt, ha = 'left', va = 'center', bbox = bbox_props, fontsize = 13)
+
+                stxt[k] = '%s(%.2f)' % (name, T)
+                plt.vlines(wp, 0, max(ratioMeas[k], ratioCalc[k]) + 0.03, linestyles = ':')
+
+                o = 0
+                bOutlier = False
+                for e in outliers_emb:
+                    oe = e + outliers_freq[o]
+                    if stxt[k] == oe:
+                        bOutlier = True
+                        break
+                    o += 1
+                # end for
+
+                # add to list if not outlier
+                if  not bOutlier:
+                    ratioMeasNoOutl[ko] = ratioMeas[k]
+                    ratioCalcNoOutl[ko] = ratioCalc[k]
+                    ko += 1
 
                 i += 1
+            # end for
+            j += 1
+        # end for in embayments
+
+        # plot a regression to estimate the accuracy of model prediction
+        # statistics
+
+        [r2, slope, intercept, r_value, p_value, std_err] = ustats.rsquared(ratioMeasNoOutl, ratioCalcNoOutl)
+        ustats.plot_regression(ratioMeas, ratioCalc, slope, intercept, point_labels = stxt, x_label = "Meas. Relative Amplit", y_label = "Calc. Relative amplitude", title = None, \
+                               r_value = r_value, p_value = p_value, fontsize = 22)
+
 
 

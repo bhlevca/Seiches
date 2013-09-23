@@ -21,13 +21,15 @@ path2 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Da
 path3 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Toronto_Harbour'
 path4 = '/home/bogdan/Documents/UofT/PhD/Data_Files/Toberymory_tides'
 
-embayments = {'FMB' : {'A':850000., 'B':25. , 'H':1., 'L':130.,
-                       'Period':[12.2, 5.065, 1.38, 0.81, 0.48] ,  # h
-                       'Amplitude':[0.0365, 0.023, 0.015, 0.018, 0.016],  # m
-                       'Amplitude_bay':[0.0365, 0.023, 0.015, 0.018, 0.016],  # m
-                       'Phase':[5, 22, -15, 39, -4.6],  # rad
-                       'CD':0.0032,
-                       'filename':path + '/Inner_Harbour_July_processed.csv'},
+
+embayments = {
+              'FMB' : {'A':850000., 'B':25. , 'H':1., 'L':130.,
+                        'Period':[12.4, 5.2, 1.28, 0.8, 0.5, 0.36] ,  # h
+                        'Amplitude':[0.034, 0.022, 0.017, 0.023, 0.021, 0.022],  # m
+                        'Amplitude_bay':[0.024, 0.02, 0.014, 0.012, 0.0045, 0.002],  # m
+                        'Phase':[5, 22, -15, 39, -4.6, -3.0],  # rad
+                        'CD':0.0032,
+                        'filename':path + '/Inner_Harbour_July_processed.csv'},
               'Tob-IBP-ex' : {'A':150000., 'B':140. , 'H':2.143, 'L':570.,
                        'Period':[16.8 / 60, 12.0 / 60, 8.0 / 60, 5.35 / 60, 4.5 / 60] ,  # h
                        'Amplitude':[0.02, 0.018, 0.016, 0.015, 0.018],  # m
@@ -67,6 +69,8 @@ class Embayment(object):
     '''
     classdocs
     '''
+    printtitle = False
+
 
     def __init__(self, name):
         '''
@@ -85,8 +89,16 @@ class Embayment(object):
         self.Cd = dict['CD']
         self.filename = dict['filename']
 
+
+
     @staticmethod
-    def plotMultipleTimeseries(path_in, filenames, names, detrend = False, filtered = False, lowcut = None, highcut = None, tunits = 'sec'):
+    def set_PrintTitle(flag):
+        Embayment.printtitle = flag
+
+
+    @staticmethod
+    def plotMultipleTimeseries(path_in, filenames, names, detrend = False, filtered = False, lowcut = None, highcut = None, \
+                                tunits = 'sec', printtitle = False):
         # plot the original Lake oscillation input
         ts = []
         i = 0
@@ -136,18 +148,19 @@ class Embayment(object):
 
         legend = names
         # end
-        fft_utils.plot_n_TimeSeries("Detrended Lake and Bay Levels", xlabel, ylabel, xa, series, legend)
+        fft_utils.plot_n_TimeSeries("Detrended Lake and Bay Levels", xlabel, ylabel, xa, \
+                                    series, legend, plottitle = Embayment.printtitle, fontsize = 20)
 
 
 
     # end plotLakeLevels
 
     @staticmethod
-    def SpectralAnalysis(b_wavelets = False, window = "hanning", num_segments = None, tunits = 'day', funits = "Hz", filter = None, log = False):
+    def SpectralAnalysis(bay, b_wavelets = False, window = "hanning", num_segments = None, tunits = 'day', funits = "Hz", filter = None, log = False):
 
         # show extended calculation of spectrum analysis
         show = True
-        bay = bayname
+
         bay_names = []
         lake_name = ""
         bay_name = ""
@@ -224,17 +237,20 @@ class Embayment(object):
             ci05 = [fftsa1.x05, fftsa2.x05, fftsa3.x05, fftsa4.x05]
             ci95 = [fftsa1.x95, fftsa2.x95, fftsa3.x95, fftsa4.x95]
             freq = [fftsa1.f, fftsa2.f, fftsa3.f, fftsa4.f]
-            FFTGraphs.plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq, [ci05, ci95], num_segments, funits, y_label = None, title = None, log = log, fontsize = 20, tunits = tunits)
+            FFTGraphs.plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq, [ci05, ci95], \
+                                                                 num_segments, funits, y_label = None, title = None, \
+                                                                 log = log, fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle)
 
         else:
             showLevels = False
             detrend = False
             draw = False
             fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, num_segments, filter, log)
-            fftsa.plotLakeLevels(lake_name, bay_name, detrend)
-            fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits, y_label = None, title = None, log = log, fontsize = 20, tunits = tunits)
-            fftsa.plotPowerDensitySpectrumFreq(lake_name, bay_name, funits)  # = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
-            fftsa.plotSingleSideAplitudeSpectrumTime(lake_name, bay_name)
+            fftsa.plotLakeLevels(lake_name, bay_name, detrend, Embayment.printtitle)
+            fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits, y_label = None, title = None, log = log, \
+                                                     fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle)
+            fftsa.plotPowerDensitySpectrumFreq(lake_name, bay_name, funits, plottitle = Embayment.printtitle)
+            fftsa.plotSingleSideAplitudeSpectrumTime(lake_name, bay_name, plottitle = Embayment.printtitle)
 
             # fftsa.plotZoomedSingleSideAplitudeSpectrumFreq()
             # fftsa.plotZoomedSingleSideAplitudeSpectrumTime()
@@ -269,9 +285,9 @@ class Embayment(object):
                     exit(1)
 
                 graph.doSpectralAnalysis()
-                graph.plotDateScalogram(scaleType = 'log', plotFreq = True)
-                graph.plotSingleSideAplitudeSpectrumTime()
-                graph.plotSingleSideAplitudeSpectrumFreq()
+                graph.plotDateScalogram(scaleType = 'log', plotFreq = True, printtitle = Embayment.printtitle)
+                graph.plotSingleSideAplitudeSpectrumTime(printtitle = Embayment.printtitle)
+                graph.plotSingleSideAplitudeSpectrumFreq(printtitle = Embayment.printtitle)
                 graph.showGraph()
             # nd if b_wavelets
     # end SpectralAnalysis
@@ -306,20 +322,20 @@ class Embayment(object):
     # end HarmonicAnalysis
 
     @staticmethod
-    def waveletAnalysis(title, tunits, slevel, avg1, avg2, val1, val2, \
+    def waveletAnalysis(bay, title, tunits, slevel, avg1, avg2, val1, val2, \
                         dj = None, s0 = None, J = None, alpha = None):
 
         ppath = path
-        if self.name == 'FMB':
+        if bay == 'FMB':
             # Frenchman's bay data
             ppath = path
             file = 'Lake_Ontario_1115682_processed.csv'
-        elif self.name == 'BUR':
+        elif bay == 'BUR':
             # Burlington data    43.333333N , 79.766667W (placed in the lake not ht sheltered bay)
             ppath = path
             file = 'LO_Burlington-Apr26-Apr28-2011.csv'
         # Fathom Five National Park Outer Boat Passage
-        elif self.name == 'Tob-OBP':
+        elif bay == 'Tob-OBP':
             ppath = path4
             file = 'LL2.csv'
             # file = 'LL1-28jul2010.csv'
@@ -327,12 +343,12 @@ class Embayment(object):
             ppath = path4
             file = 'LL1.csv'
         # Fathom Five National Park Cove Island Harbour
-        elif self.name == 'Tob-CIH':
+        elif bay == 'Tob-CIH':
             ppath = path4
             file = 'LL4.csv'
             # file = 'LL4-28jul2010.csv'
         # Embayment A Tommy Thomson Park
-        elif self.name == 'Emb-A':
+        elif bay == 'Emb-A':
             ppath = path3
             file = '1115865-Station16-Gate-date.csv'
         else:
@@ -370,121 +386,53 @@ class Embayment(object):
     # end EmbaymentFlow
 
     def CalculateFlow(self, days):
-        # Water exchange
-        #
-        #
-        # Calculate the Flow in the Embayment
-        #
-        Cd_const = False
-
-        filename1 = 'Inner_Harbour_July_processed.csv'
-        # [Time1,SensorDepth1] = textread(filename1, '%f %f' ,-1,'delimiter', ',');
-        # resample to be the same as first
         '''
-        ts=timeseries(SensorDepth1,Time1,'Name','level');
-        ts=transpose(ts);
-        res_ts=resample(ts,Time);
-        SensorDepth2=res_ts.data(:); %get(res_ts,'Data');
-        % predicted
+         Water exchange
+         Calculate the Flow in the Embayment
         '''
         embPlot = EmbaymentPlot.EmbaymentPlot(self)
         [t, X, c, k, w, x0, v0, R] = embPlot.Response(days)
-        embPlot.plotForcingResponse(t)
-        embPlot.plotRespVsOmegaVarAmplit()
-        embPlot.plotRespVsOmegaVarFric()
-        embPlot.plotPhaseVsOmega()
-        embPlot.plotRespVsOmegaVarArea()
-        embPlot.plotRespVsOmegaVarMouth()
-        embPlot.plotRespVsOmegaVarMouthCurves()
-        embPlot.plotDimensionlessResponse()
+        embPlot.plotForcingResponse(t, printtitle = Embayment.printtitle)
+        embPlot.plotRespVsOmegaVarAmplit(printtitle = Embayment.printtitle)
+        embPlot.plotRespVsOmegaVarFric(printtitle = Embayment.printtitle)
+        embPlot.plotPhaseVsOmega(printtitle = Embayment.printtitle)
+        embPlot.plotRespVsOmegaVarArea(printtitle = Embayment.printtitle)
+        embPlot.plotRespVsOmegaVarMouth(printtitle = Embayment.printtitle)
+        embPlot.plotRespVsOmegaVarMouthCurves(printtitle = Embayment.printtitle)
+        embPlot.plotDimensionlessResponse(printtitle = Embayment.printtitle)
         embPlot.show()
 
-        Qp = self.EmbaymentFlow(self.A, R, (t[2] - t[1]) * 86400)
 
-        Vp = 0
-        sumpred = 0
-        for i in range(0, len(Qp) - 1):
-            sumpred = sumpred + 0.5 * np.abs(R[i] - R[i - 1])
-            if ((Qp[i] - Qp[i - 1]) > 0) and (Qp[i] > 0) :
-                Vp = Vp + (Qp[i] + Qp[i - 1]) / 2 * 300;
-            # end
-        # end
-
-        print "V pred=%f, Sum pred=%f" % (Vp, sumpred)
-
+        # calculate flushing time
         [Time, SensorDepth] = fft_utils.readFile("", self.filename)
-        Qm = self.EmbaymentFlow(self.A, SensorDepth, (Time[2] - Time[1]) * 86400)
+
+        # Limit the time interval to the same number of days: days assuming that measuread days are more
+        meas_days = int (Time[len(Time) - 1] - Time[1])
+        interv = len(Time) * days / meas_days
+        Qm = self.EmbaymentFlow(self.A, SensorDepth[:interv], (Time[2] - Time[1]) * 86400)
 
         Vm = 0
         summeas = 0
         for i in range(0, len(Qm) - 1):
             summeas = summeas + 0.5 * np.abs(SensorDepth[i] - SensorDepth[i - 1])
             if ((Qm[i] - Qm[i - 1]) > 0) and (Qm[i] > 0) :
-                Vm = Vm + (Qm[i] + Qm[i - 1]) / 2 * 300;
+                Vm = Vm + (Qm[i] + Qm[i - 1]) / 2 * self.B * self.H
             # end
         # end
 
         print "V meas=%f Sum meas=%f" % (Vm, summeas)
+        Qp = self.EmbaymentFlow(self.A, R, (t[2] - t[1]))
 
+        Vp = 0
+        sumpred = 0
+        for i in range(0, len(Qp) - 1):
+            sumpred = sumpred + 0.5 * np.abs(R[i] - R[i - 1])
+            if ((Qp[i] - Qp[i - 1]) > 0) and (Qp[i] > 0) :
+                Vp = Vp + (Qp[i] + Qp[i - 1]) / 2 * self.B * self.H
+            # end
+        # end
 
-        '''
-        y=detrend(SensorDepth2);
-        %use smoothed time-series to eliminate oscillations, which do not
-        %contribute to flushing.
-        y2=smoothSeries(SensorDepth2,8); %30 minutes
-        % measured
-        Q2=self.EmbaymentFlow(self.A,self.B,self.H,SensorDepth2,(Time(2)-Time(1))*86400);
-        figure;
-        [titl, errmsg] = sprintf('FM Bay Flow vs.  Time Diagram\n Cd=%4.3f[m] H=%4.1f B=%4.1f[m] L=%4.1f[m]',Cd,H,B,L);
-        %plot(t(10:length(Q)),Q(10:length(Q)),'b'),xlabel('time [s]'), ylabel('Q [m^3/s]'), title(titl), grid on, hold  on
-        tt=Time'; % transpose
-        plot(tt(1:length(Q)),Q,'b'),xlabel('time [s]'), ylabel('Q [m^3/s]'), title(titl), grid on, hold  on
-
-        plot(tt(1:length(Q)),Q2(1:length(Q)),'-.r');
-        h = legend('predicted','measured',2, 'location', 'NorthEast');
-
-        %plot the original Lake oscillation input
-        L = length(Q);
-        xlim = [tt(1),tt(L)];  % plotting range
-        Xticks = tt(1):(tt(length(Q))-tt(1))/3:tt(length(Q));
-        Xtickslabel={};
-        for i in range(0, len(Xticks)):
-            Xtickslabel{i}=datestr(Xticks(i),' mmm dd HH:MM')
-        #end for
-        set(gca,'XLim',xlim(:),    'XTick',Xticks(:),'XTickLabel',Xtickslabel(:));
-
-
-        summeas=0
-        sumpred=0
-        Vp=0;
-        for i in range(1,len(Q)):
-            sumpred=sumpred+0.5*abs(R(i)-R(i-1));
-            if ((Q(i) - Q(i-1)) >0) && (Q(i) > 0 ): #&& (Q(i-1) >0)
-                Vp=Vp+(Q(i)+Q(i-1))/2*300
-            #end if
-        #end for
-
-        Vm=0;
-        for i=2:length(Q)
-            %{
-            if (SensorDepth2(i)-SensorDepth2(i-1) > 0) && (SensorDepth2(i) >0)
-                summeas=summeas+0.5*(SensorDepth2(i)-SensorDepth2(i-1));
-            end
-            %}
-            %summeas=summeas+0.5*abs(SensorDepth2(i)-SensorDepth2(i-1));
-            summeas=summeas+0.5*abs(y2(i)-y2(i-1));
-            if ((Q2(i) - Q2(i-1)) >0) && (Q2(i) > 0 ) %&& (Q2(i-1) >0)
-                Vm=Vm+(Q2(i)+Q2(i-1))/2*300;
-            end
-        end
-
-
-
-        print 'Sum measured %f' % summeas
-        print 'Sum predicted %f' % sumpred
-        print 'Vol meas %f' % Vm
-        print 'Vol pred %f ', Vp
-        '''
+        print "V pred=%f, Sum pred=%f" % (Vp, sumpred)
     # end CalculateFlow
 
     @staticmethod
@@ -496,9 +444,11 @@ class Embayment(object):
         filenames = ['LL1.csv', 'LL4.csv', 'LL2.csv', 'LL3.csv']
         # filenames = ['LL3.csv', '11690-01-JUL-2010_out.csv']
         # filenames = ['LL1-28jul2010.csv', 'LL4-28jul2010.csv', 'LL2-28jul2010.csv', 'LL3-28jul2010.csv']
+        # filenames = ['Lake_Ontario_1115682_processed.csv', 'Inner_Harbour_July_processed.csv']
 
         names = [ "Inner Boat Passage" , "Cove Island Harbour", "Outer Boat Passage", "Harbour Island - lake"]
         # names = ["Harbour Island - lake", "Station 11960"]
+        # names = [ "Lake Ontario", "Frenchman's Bay"]
 
         # set to True for Butterworth filtering - just for testing.
         doFiltering = False
@@ -510,13 +460,13 @@ class Embayment(object):
 
 
         doSpectral = True
-        dowavelets = True
-        doWavelet = True
+        dowavelets = False  # Scipy
+        doWavelet = True  # Terrence & Compo
         doHarmonic = False
         doFiltering = False
         tunits = 'day'  # can be 'sec', 'hour'
         window = 'hanning'
-        num_segments = 10
+        num_segments = 4
 
         btype = 'band'
         if btype == 'low':  # pass freq < lowcutoff
@@ -539,7 +489,7 @@ class Embayment(object):
 
         log = False
         if doSpectral:
-            Embayment.SpectralAnalysis(dowavelets, window, num_segments, tunits, funits, filter, log)
+            Embayment.SpectralAnalysis(bay, dowavelets, window, num_segments, tunits, funits, filter, log)
 
         tunits = 'day'
         slevel = 0.95
@@ -550,7 +500,7 @@ class Embayment(object):
 
         title = bay + ""
         if doWavelet :
-            Embayment.waveletAnalysis(title, tunits, slevel, avg1, avg2, val1, val2)
+            Embayment.waveletAnalysis(bay, title, tunits, slevel, avg1, avg2, val1, val2)
 
         if doHarmonic:
             freq_hours = 4.5
@@ -573,13 +523,17 @@ if __name__ == '__main__':
     # bay = 'Tob_All'
     # bay = 'Tob-HI'
     # bay = 'L-SUP'
-    days = 0.2
+    days = 10
 
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
     parser.add_option("-s", "--spectral", dest = "sp", action = "store_true", default = False, help = "Spectral analysis")
     parser.add_option("-f", "--flushing", dest = "fl", action = "store_true", default = False, help = "Flusing timescales")
+    parser.add_option("-t", "--title", dest = "ti", action = "store_true", default = False, help = "Print graph titles")
+
     (options, args) = parser.parse_args()
+    if options.ti:
+        Embayment.set_PrintTitle(True)
     if options.sp:
         print "* Calculate Spectral *"
         Embayment.CalculateSpectral(bay)
