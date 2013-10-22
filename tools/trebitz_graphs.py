@@ -77,7 +77,7 @@ def plot_point_Array(title, xlabel, ylabel, x_arr, y_arr, p_arr, legend = None, 
 
     if hline != None and xmin_lim != None and xmax_lim != None:
         # horizontal line from (70,100) to (70, 250)
-        # ax.hlines([hline], xmin_lim, xmax_lim, lw = 2)
+        # ax.hlines([hline], xmin_lim, xmax_lim, lw = 3)
         eps = 0.000001
         t = np.linspace(xmin_lim + eps, xmax_lim, 100)
         xl = np.array(t);
@@ -137,11 +137,11 @@ def plot_point_Array(title, xlabel, ylabel, x_arr, y_arr, p_arr, legend = None, 
         xl = np.array(t);
         for i in range(0, len(xl)):
             xl[i] = intercept
-        ax.plot(t, xl, '-.b', lw = 2)
+        ax.plot(t, xl, '-.b', lw = 3)
 
     x = np.linspace(0, xmax, 100)
     y = slope * x + intercept
-    ax.plot(x, y, '-.b', lw = 2)
+    ax.plot(x, y, '-.b', lw = 3)
 
     plt.draw()
     plt.show()
@@ -156,5 +156,5 @@ if __name__ == '__main__':
     title = "Lake Superior embayments. Relative amplification vs. mouth area"
     ylabel = "Relative Amplitude (bay/lake)"
     xlabel = "Mouth Area m$^2$"
-    plot_point_Array(title, xlabel, ylabel, MouthArea, RelativeAmplit, Area, legend = ["L. Sup. Emb. (ha)"], linewidth = 0.6, ymax_lim = 2.0, ymin_lim = 0,
+    plot_point_Array(title, xlabel, ylabel, MouthArea, RelativeAmplit, Area, legend = ["Lake Superior Embayments (ha)"], linewidth = 0.6, ymax_lim = 2.0, ymin_lim = 0,
                      annotate = True, log = 'logx' , hline = 1, xmax_lim = 80, xmin_lim = 0, settitle = False, estimate = True)

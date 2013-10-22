@@ -22,6 +22,7 @@ import scipy.signal
 import matplotlib.mlab
 import matplotlib.pyplot as plt
 from datetime import datetime
+from pandas import *
 
 path = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/LakeOntario-data'
 path1 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Data-long/FMB'
@@ -72,10 +73,34 @@ class FFTSpectralAnalysis(object):
         SensorDepth = np.array(SensorDepth)
         if bResample:
             print "*** Resampling SensorDepth and Time from length: %d to length: %d" % (len(Time), len(Time1))
-            SensorDepth = sp.signal.resample(SensorDepth, len(Time1))
-            Time = sp.signal.resample(Time, len(Time1))
+            # SensorDepth, spos = sp.signal.resample(SensorDepth, len(Time1), SensorDepth)
+            # Time, tpos = sp.signal.resample(Time, len(Time1), Time)
+            from matplotlib.dates import date2num, num2date
+            dat = []
+            dat1 = []
+            i = 0
+            for t in Time:
+                if t < 695056:
+                    t += 695056
+                datet = num2date(t)
+                dat.append(datet)
+                i += 1
 
-         # prepare for the amplitude spectrum analysis
+            i = 0
+            for t1 in Time1:
+                if t1 < 695056:
+                    t1 += 695056
+                dat1.append(num2date(t1))
+                i += 1
+
+            ts = pandas.Series(SensorDepth, index = dat)
+            ts2 = ts.reindex(dat1, method = 'ffill')
+            SensorDepth = ts2.values
+            SensorDepth[0] = SensorDepth[1]
+            Time = Time1
+
+
+        # prepare for the amplitude spectrum analysis
         if tunits == 'day':
             factor = 86400
         elif tunits == 'hour':
@@ -179,8 +204,8 @@ class FFTSpectralAnalysis(object):
 
         # plot the original Lake oscillation input
         if draw:
-            xlabel = 'Time [days]'
-            ylabel = 'Z(t) [m]'
+            xlabel = 'Time (days)'
+            ylabel = 'Z(t) (m)'
             legend = ['L. Ontario water levels']
             fft_utils.plotTimeSeries("Lake levels", xlabel, ylabel, Time, SensorDepth, legend)
         # end

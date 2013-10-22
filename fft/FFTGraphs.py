@@ -128,8 +128,10 @@ class FFTGraphs(object):
 
                 if (self.Time[1] - self.Time[0]) - (self.Time1[1] - self.Time1[0]) > eps:
                     bResample = True
-                    [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
-                        self.fftsa.FourierAnalysis(self.filename1, showOrig, tunits, window, num_segments, filter, log, bResample, self.Time)
+                    # [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
+                    #    self.fftsa.FourierAnalysis(self.filename1, showOrig, tunits, window, num_segments, filter, log, bResample, self.Time)
+                    [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = \
+                        self.fftsa.FourierAnalysis(self.filename, showOrig, tunits, window, num_segments, filter, log, bResample, self.Time1)
                 # end if
             # end if
         elif self.data != None:
@@ -141,13 +143,13 @@ class FFTGraphs(object):
     # end doSpectralAnalysis
 
 
-    def plotLakeLevels(self, lake_name, bay_name, detrend = False, y_label = None, title = None, plottitle = False):
+    def plotLakeLevels(self, lake_name, bay_name, detrend = False, y_label = None, title = None, plottitle = False, doy = False, grid = False):
         if self.show :
             # plot the original Lake oscillation input
             L = len(self.Time)
-            xlabel = 'Time [days]'
+            xlabel = 'Time (days)'
             if y_label == None:
-                ylabel = 'Detrended Z(t) [m]'
+                ylabel = 'Detrended Z (m)'
             else :
                 ylabel = y_label
             if self.filename1 != None:
@@ -178,7 +180,7 @@ class FFTGraphs(object):
                 title = "Detrended Lake Levels"
             else:
                 title = title + " - time series"
-            fft_utils.plot_n_TimeSeries(title, xlabel, ylabel, xa, ya, legend, plottitle)
+            fft_utils.plot_n_TimeSeries(title, xlabel, ylabel, xa, ya, legend, plottitle, doy, grid = grid)
 
         # end if
     # end plotLakeLevels
@@ -186,7 +188,7 @@ class FFTGraphs(object):
 
 
     def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None,
-                                            log = False, fontsize = 20, tunits = None, plottitle = False):
+                                            log = False, fontsize = 20, tunits = None, plottitle = False, grid = False):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -239,7 +241,7 @@ class FFTGraphs(object):
                 fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle)
             else:
                 fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
-                                                log = log, fontsize = fontsize, plottitle = plottitle)
+                                                log = log, fontsize = fontsize, plottitle = plottitle, grid = grid)
 
     # end plotSingleSideAplitudeSpectrumFreq
 
@@ -480,23 +482,40 @@ class FFTGraphs(object):
             fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, plottitle = plottitle)
     # end plotZoomedSingleSideAplitudeSpectrumTime
 
-    def plotCospectralDensity(self, plottitle = False):
-        if self.show:
-            # plot the power of the cospectral density F_in(w) * F_out(w)
-            #
-            zsSeries = fft_utils.smoothSeries(self.mx[100:-1], 5)
-            if self.filename1 != None:
-                zsSeries1 = fft_utils.smoothSeries(self.mx1[100:-1], 5);
-                tph = (1 / self.f[100:-1]) / 3600
-                convolution = zsSeries * zsSeries1
-                xa = np.array([tph])
-                ya = np.array([ convolution])
-                tph = (1 / self.f[100:-1]) / 3600
-                legend = ['Cospectral density']
-                xlabel = 'T (h)'
-                ylabel = 'Y^2(t) [m^2]'
-                title = 'Zoomed in Power cospectral density'
-                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend)
+    def plotCospectralDensity(self, title = None, x_label = None, y_label = None, \
+                              funits = "cph", plottitle = False, log = False):
+        # plot the power of the cospectral density F_in(w) * F_out(w)
+        #
+        zsSeries = fft_utils.smoothSeries(self.mx, 5)
+        if self.filename1 != None:
+            zsSeries1 = fft_utils.smoothSeries(self.mx1, 5);
+            convolution = zsSeries * zsSeries1.conjugate()
+            ya = np.array([ convolution])
+            legend = ['Cospectra']
+
+            if self.show:
+                # Plot single - sided amplitude spectrum.
+                if title == None:
+                    title = 'Cospectral Power Density spectrum vs freq'
+                else:
+                    title = title + " - Cospectral Power Density Spectrum"
+
+                if funits == 'Hz':
+                    xlabel = 'Frequency (Hz)'
+                    f = self.f
+                elif funits == 'cph':
+                    xlabel = 'Frequency (cph)'
+                    f = self.f * 3600
+                # end if
+                xa = np.array([f])
+
+                if y_label == None:
+                    ylabel = 'PSD (m$^2$/' + funits + ')'
+                else :
+                    ylabel = y_label
+
+                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle)
+
             # end
         # end
     # end plotCospectralDensity

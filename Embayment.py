@@ -98,7 +98,7 @@ class Embayment(object):
 
     @staticmethod
     def plotMultipleTimeseries(path_in, filenames, names, detrend = False, filtered = False, lowcut = None, highcut = None, \
-                                tunits = 'sec', printtitle = False):
+                                tunits = 'sec', printtitle = False, minmax = None, grid = False):
         # plot the original Lake oscillation input
         ts = []
         i = 0
@@ -130,8 +130,8 @@ class Embayment(object):
 
 
         L = len(Time)
-        xlabel = 'Time [days]'
-        ylabel = 'Detrended Z(t) [m]'
+        xlabel = 'Julian Day'
+        ylabel = 'Detrended Z (m)'
         xa = np.array(time)
 
         # This is a moving average detrend
@@ -149,14 +149,15 @@ class Embayment(object):
         legend = names
         # end
         fft_utils.plot_n_TimeSeries("Detrended Lake and Bay Levels", xlabel, ylabel, xa, \
-                                    series, legend, plottitle = Embayment.printtitle, fontsize = 20)
+                                    series, legend, plottitle = Embayment.printtitle, fontsize = 20, doy = True, minmax = minmax, grid = grid)
 
 
 
     # end plotLakeLevels
 
     @staticmethod
-    def SpectralAnalysis(bay, b_wavelets = False, window = "hanning", num_segments = None, tunits = 'day', funits = "Hz", filter = None, log = False):
+    def SpectralAnalysis(bay, b_wavelets = False, window = "hanning", num_segments = None, tunits = 'day', funits = "Hz", \
+                          filter = None, log = False, doy = False, grid = False):
 
         # show extended calculation of spectrum analysis
         show = True
@@ -239,23 +240,23 @@ class Embayment(object):
             freq = [fftsa1.f, fftsa2.f, fftsa3.f, fftsa4.f]
             FFTGraphs.plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq, [ci05, ci95], \
                                                                  num_segments, funits, y_label = None, title = None, \
-                                                                 log = log, fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle)
+                                                                 log = log, fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle, grid = grid)
 
         else:
             showLevels = False
             detrend = False
             draw = False
             fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, num_segments, filter, log)
-            fftsa.plotLakeLevels(lake_name, bay_name, detrend, Embayment.printtitle)
+            fftsa.plotLakeLevels(lake_name, bay_name, detrend, Embayment.printtitle, doy = doy, grid = grid)
             fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits, y_label = None, title = None, log = log, \
-                                                     fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle)
-            fftsa.plotPowerDensitySpectrumFreq(lake_name, bay_name, funits, plottitle = Embayment.printtitle)
-            fftsa.plotSingleSideAplitudeSpectrumTime(lake_name, bay_name, plottitle = Embayment.printtitle)
+                                                     fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle, grid = grid)
+            fftsa.plotPowerDensitySpectrumFreq(lake_name, bay_name, funits, plottitle = Embayment.printtitle, grid = grid)
+            fftsa.plotSingleSideAplitudeSpectrumTime(lake_name, bay_name, plottitle = Embayment.printtitle, grid = grid)
 
             # fftsa.plotZoomedSingleSideAplitudeSpectrumFreq()
             # fftsa.plotZoomedSingleSideAplitudeSpectrumTime()
-            # fftsa.plotCospectralDensity()
-            fftsa.plotPhase()
+            fftsa.plotCospectralDensity(log = log, grid = grid)
+            # fftsa.plotPhase()
 
             if b_wavelets:
                 # Wavelet Spectral analysis
@@ -368,7 +369,8 @@ class Embayment(object):
         # ylabel_sc = 'Freq (Hz)'
         sc_type = "period"
         # sc_type = "freq"
-        x_type = 'date'
+        # x_type = 'date'
+        x_type = 'dayofyear'
         kwavelet.plotSpectrogram(ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
         ylabel_sc = 'Frequency ($s^{-1}$)'
         kwavelet.plotAmplitudeSpectrogram(ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
@@ -392,14 +394,18 @@ class Embayment(object):
         '''
         embPlot = EmbaymentPlot.EmbaymentPlot(self)
         [t, X, c, k, w, x0, v0, R] = embPlot.Response(days)
-        embPlot.plotForcingResponse(t, printtitle = Embayment.printtitle)
-        embPlot.plotRespVsOmegaVarAmplit(printtitle = Embayment.printtitle)
+        #
+        # embPlot.plotForcingResponse(t, printtitle = Embayment.printtitle)    # too simple, unattractive
+        # embPlot.plotRespVsOmegaVarAmplit(printtitle = Embayment.printtitle)  # uses the spring equation, not necessaru fo the paper
+        # embPlot.plotPhaseVsOmega(printtitle = Embayment.printtitle)          #not necessary for the paper
+        #
         embPlot.plotRespVsOmegaVarFric(printtitle = Embayment.printtitle)
-        embPlot.plotPhaseVsOmega(printtitle = Embayment.printtitle)
+
         embPlot.plotRespVsOmegaVarArea(printtitle = Embayment.printtitle)
         embPlot.plotRespVsOmegaVarMouth(printtitle = Embayment.printtitle)
-        embPlot.plotRespVsOmegaVarMouthCurves(printtitle = Embayment.printtitle)
-        embPlot.plotDimensionlessResponse(printtitle = Embayment.printtitle)
+
+        # embPlot.plotRespVsOmegaVarMouthCurves(printtitle = Embayment.printtitle)  # trebitz
+        # embPlot.plotDimensionlessResponse(printtitle = Embayment.printtitle)
         embPlot.show()
 
 
@@ -446,7 +452,7 @@ class Embayment(object):
         # filenames = ['LL1-28jul2010.csv', 'LL4-28jul2010.csv', 'LL2-28jul2010.csv', 'LL3-28jul2010.csv']
         # filenames = ['Lake_Ontario_1115682_processed.csv', 'Inner_Harbour_July_processed.csv']
 
-        names = [ "Inner Boat Passage" , "Cove Island Harbour", "Outer Boat Passage", "Harbour Island - lake"]
+        names = [ "Inner Boat Passage" , "Cove Island Harbour", "Outer Boat Passage", "Lake Huron"]
         # names = ["Harbour Island - lake", "Station 11960"]
         # names = [ "Lake Ontario", "Frenchman's Bay"]
 
@@ -456,7 +462,8 @@ class Embayment(object):
         highcutoff = 0.00834
         tunits = 'day'  # can be 'sec', 'hour'
         funits = "cph"
-        Embayment.plotMultipleTimeseries(path4, filenames, names, detrend, doFiltering , lowcutoff, highcutoff, tunits)
+        minmax = [-0.4, 0.4]
+        Embayment.plotMultipleTimeseries(path4, filenames, names, detrend, doFiltering , lowcutoff, highcutoff, tunits, minmax = minmax)
 
 
         doSpectral = True
@@ -466,7 +473,7 @@ class Embayment(object):
         doFiltering = False
         tunits = 'day'  # can be 'sec', 'hour'
         window = 'hanning'
-        num_segments = 4
+        num_segments = 10
 
         btype = 'band'
         if btype == 'low':  # pass freq < lowcutoff
@@ -488,8 +495,9 @@ class Embayment(object):
             filter = None
 
         log = False
+        doy = True  # display time in day of the year instead of a timestamp
         if doSpectral:
-            Embayment.SpectralAnalysis(bay, dowavelets, window, num_segments, tunits, funits, filter, log)
+            Embayment.SpectralAnalysis(bay, dowavelets, window, num_segments, tunits, funits, filter, log, doy)
 
         tunits = 'day'
         slevel = 0.95

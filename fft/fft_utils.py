@@ -29,7 +29,18 @@ yearsFmt = matplotlib.dates.DateFormatter('%Y')
 # every monday
 mondays = matplotlib.dates.WeekdayLocator(MONDAY)
 
-#
+
+def timestamp2doy(dateTime):
+    '''
+    Converts from date time in seconds to day of the year
+    '''
+    dofy = np.zeros(len(dateTime))
+    for j in range(0, len(dateTime)) :
+        d = num2date(dateTime[j])
+        dofy[j] = d.timetuple().tm_yday + d.timetuple().tm_hour / 24. + d.timetuple().tm_min / (24. * 60) + d.timetuple().tm_sec / (24. * 3600)
+
+    return dofy
+
 def drange(start, stop, step):
     '''
     Example:
@@ -249,7 +260,8 @@ def errorbar(ax, x0, y0, ci, color):
     ax.loglog(x0, y0 * ci[0], 'b_')
     ax.loglog(x0, y0 * ci[1], 'b_')
 
-def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.8, ymax_lim = None, log = False, fontsize = 18, plottitle = False):
+def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.8, ymax_lim = None, log = False, \
+                         fontsize = 18, plottitle = False, grid = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -302,8 +314,8 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
         i += 1
 
     # ax.xaxis.grid(True, 'major')
-    ax.xaxis.grid(True, 'minor')
-    ax.grid(True)
+    ax.xaxis.grid(grid, 'minor')
+    ax.grid(grid)
     plt.ylabel(ylabel, fontsize = fontsize)
     plt.xlabel(xlabel, fontsize = fontsize)
     if plottitle:
@@ -323,20 +335,27 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
 # end
 
 
-def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plottitle = False):
+def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plottitle = False, doy = False, grid = False):
 
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
     ax = fig.add_subplot(111)
 
-    ax.plot(x, y, linewidth = 0.6)
+    if doy:
+        dofy = timestamp2doy(x)
+        ax.plot(dofy, y, linewidth = 0.6)
+    else:
+        ax.plot(x, y, linewidth = 0.6)
 
-    # format the ticks
-    formatter = matplotlib.dates.DateFormatter('%Y-%m-%d')
-    ax.xaxis.set_major_formatter(formatter)
-    ax.xaxis.set_minor_locator(mondays)
+        # format the ticks
+        formatter = matplotlib.dates.DateFormatter('%Y-%m-%d')
+        ax.xaxis.set_major_formatter(formatter)
+        ax.xaxis.set_minor_locator(mondays)
+        # rotates and right aligns the x labels, and moves the bottom of the
+        # axes up to make room for them
+        fig.autofmt_xdate()
 
-    ax.xaxis.grid(True, 'minor')
-    ax.grid(True)
+    ax.xaxis.grid(grid, 'minor')
+    ax.grid(grid)
     title = title
 
     plt.ylabel(ylabel)
@@ -346,15 +365,14 @@ def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, 
     if legend != None:
         plt.legend(legend);
 
-    # rotates and right aligns the x labels, and moves the bottom of the
-    # axes up to make room for them
-    fig.autofmt_xdate()
     plt.draw()
     plt.show()
 # end
 
-def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.8, plottitle = False, fontsize = 18):
-    fig = plt.figure(facecolor = 'w', edgecolor = 'k')
+def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.8, plottitle = False, fontsize = 18, \
+                       doy = False, minmax = None, grid = False):
+
+    fig = plt.figure(facecolor = 'w', edgecolor = 'k', grid = False)
 
     ax = fig.add_subplot(111)
 
@@ -363,18 +381,25 @@ def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewi
     for a in x_arr:
         x = x_arr[i]
         y = y_arr[i]
-        ax.plot(x, y, ls[i])
+        if doy:
+            dofy = timestamp2doy(x)
+            ax.plot(dofy, y, ls[i])
+        else:
+            ax.plot(x, y, ls[i])
         i += 1
     # end for
-
-    # format the ticks
-    formatter = matplotlib.dates.DateFormatter('%Y-%m-%d')
-    ax.xaxis.set_major_formatter(formatter)
-    ax.xaxis.set_minor_locator(mondays)
+    if not doy:
+        # format the ticks
+        formatter = matplotlib.dates.DateFormatter('%Y-%m-%d')
+        ax.xaxis.set_major_formatter(formatter)
+        ax.xaxis.set_minor_locator(mondays)
+        # rotates and right aligns the x labels, and moves the bottom of the
+        # axes up to make room for them
+        fig.autofmt_xdate()
 
     # ax.xaxis.grid(True, 'major')
-    ax.xaxis.grid(True, 'minor')
-    ax.grid(True)
+    ax.xaxis.grid(grid, 'minor')
+    ax.grid(grid)
     plt.ylabel(ylabel).set_fontsize(fontsize + 2)
     plt.xlabel(xlabel).set_fontsize(fontsize + 2)
     if plottitle:
@@ -384,9 +409,10 @@ def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewi
         plt.legend(legend);
     # rotates and right aligns the x labels, and moves the bottom of the
     # axes up to make room for them
-    fig.autofmt_xdate()
     plt.xticks(fontsize = fontsize - 4)
     plt.yticks(fontsize = fontsize - 4)
+    if minmax != None:
+        plt.ylim(ymin = minmax[0], ymax = minmax[1])
     plt.show()
 # end
 

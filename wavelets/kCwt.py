@@ -24,7 +24,7 @@ Created on Sept 19, 2012
 '''
 
 import fft.fft_utils as fft_utils
-import kPyWavelet.wavelet as wavelet
+import kPyWavelet as wavelet
 import numpy as np
 import scipy.signal as signal
 import matplotlib.pyplot as plt
@@ -303,17 +303,24 @@ class kCwt(object):
 
          @return: None
         '''
+
+        if x_type == 'dayofyear':
+            Time = fft_utils.timestamp2doy(self.Time)
+        elif x_type == 'date':
+            Time = self.Time
+
+
         fig1 = plt.figure()
         ax1 = fig1.add_axes([0.1, 0.1, 0.7, 0.60])
         ax3 = fig1.add_axes([0.83, 0.1, 0.03, 0.6])
         ax1.set_yscale('log')
-        im1 = ax1.pcolormesh(self.Time, self.freq, self.amplitude)
+        im1 = ax1.pcolormesh(Time, self.freq, self.amplitude)
 
         fig2 = plt.figure()
         ax2 = fig2.add_axes([0.1, 0.1, 0.7, 0.60])
         ax4 = fig2.add_axes([0.83, 0.1, 0.03, 0.6])
         ax2.set_yscale('log')
-        im2 = ax2.pcolormesh(self.Time, self.freq, self.phase)
+        im2 = ax2.pcolormesh(Time, self.freq, self.phase)
 
         # set correct way of axis, whitespace before and after with window
         # length
@@ -373,7 +380,7 @@ class kCwt(object):
           @return: None
 
         '''
-        fontsize = 17
+        fontsize = 16
         pylab.close('all')
         # fontsize = 'medium'
         params = {'text.fontsize': fontsize,
@@ -390,18 +397,24 @@ class kCwt(object):
         # First sub-plot, the original time series anomaly.
 
 
+        if x_type == 'dayofyear':
+            Time = fft_utils.timestamp2doy(self.Time)
+        elif x_type == 'date':
+            Time = self.Time
+        else:
+            Time = self.Time
 
         if raw :
             ax = fig.add_axes([0.1, 0.75, 0.64, 0.2])
             # Plot the reconstructed signal. They are close to the original in case of simple signals.
             # The longer and more complex the signal is the more difficult is to cecomstruct.
             # The reconstructed signal is usually symmetrical
-            ax.plot(self.Time, self.iwave, '-', linewidth = 1, color = [0.5, 0.5, 0.5])
+            ax.plot(Time, self.iwave, '-', linewidth = 1, color = [0.5, 0.5, 0.5])
 
             # Plot the original signal
-            ax.plot(self.Time, self.SensorDepth, 'k', linewidth = 1.5)
+            ax.plot(Time, self.SensorDepth, 'k', linewidth = 1.5)
 
-            ax.set_title('a) %s' % (self.title,))
+            ax.set_title('(a) %s' % (self.title,))
             if self.units != '':
               ax.set_ylabel(r'%s [$%s$]' % (ylabel_ts, self.units,))
             else:
@@ -447,18 +460,18 @@ class kCwt(object):
 
         levels = np.arange(power.min(), power.max() + power.min(), (power.max() - power.min()) / 32)
 
-        # im = bx.contourf(self.Time, np.log2(y_scales), np.log2(power), np.log2(levels), cmap = cm.jet, extend = 'both')
-        im = bx.contourf(self.Time, np.log2(y_scales), np.log2(power), 32, cmap = cm.jet, extend = 'both')
+        # im = bx.contourf(Time, np.log2(y_scales), np.log2(power), np.log2(levels), cmap = cm.jet, extend = 'both')
+        im = bx.contourf(Time, np.log2(y_scales), np.log2(power), 32, cmap = cm.jet, extend = 'both')
 
         # For out of levels representation enable the following two lines.
         # However, the above lines need to define the required levels
         # im.cmap.set_under('yellow')
         # im.cmap.set_over('cyan')
 
-        bx.contour(self.Time, np.log2(y_scales), sig95, [-99, 1], colors = 'k', linewidths = 2.1)
+        bx.contour(Time, np.log2(y_scales), sig95, [-99, 1], colors = 'k', linewidths = 2.1)
 
-        bx.fill(np.concatenate([self.Time[:1] - self.dt, self.Time, self.Time[-1:] + self.dt, \
-                                self.Time[-1:] + self.dt, self.Time[:1] - self.dt, self.Time[:1] - self.dt]), \
+        bx.fill(np.concatenate([Time[:1] - self.dt, Time, Time[-1:] + self.dt, \
+                                Time[-1:] + self.dt, Time[:1] - self.dt, Time[:1] - self.dt]), \
                                 np.log2(np.concatenate([[1e-9], self.coi, [1e-9], y_scales[-1:], y_scales[-1:], [1e-9]]))\
                                 , 'k', alpha = 0.3, hatch = 'x')
 
@@ -467,9 +480,9 @@ class kCwt(object):
         # for testing only
         # fig.colorbar(im) - if present it will shift the scales
         if raw:
-            bx.set_title('b) Wavelet Power Spectrum (%s)' % (self.mother.name))
+            bx.set_title('(b) Wavelet Power Spectrum (%s)' % (self.mother.name))
         else:
-            bx.set_title('a) Wavelet Power Spectrum (%s) - %s' % (self.mother.name, self.title))
+            bx.set_title('(a) Wavelet Power Spectrum (%s) - %s' % (self.mother.name, self.title))
         bx.set_ylabel(ylabel_sc)
         Yticks = np.arange(y_scales.min(), y_scales.max(), (y_scales.max() - y_scales.min()) / 16)
 
@@ -489,6 +502,8 @@ class kCwt(object):
             bx.xaxis.grid(True, 'minor')
             fig.autofmt_xdate()
 
+        bx.set_xlim([Time.min(), Time.max()])
+
         # Third sub-plot, the global wavelet and Fourier power spectra and  kwavelet.tunitstheoretical
         # noise spectra.
 
@@ -507,9 +522,9 @@ class kCwt(object):
         cx.plot(glbl_signif, np.log2(y_scales), 'k-.')
 
         if raw:
-            cx.set_title('c) Global Wavelet Spectrum')
+            cx.set_title('(c) Global Wavelet Spectrum')
         else:
-            cx.set_title('b) Global Wavelet Spectrum')
+            cx.set_title('(b) Global Wavelet Spectrum')
         if self.units != '':
           cx.set_xlabel(r'Power [$%s^2$]' % (self.units,))
         else:
@@ -519,6 +534,12 @@ class kCwt(object):
         cx.set_ylim(np.log2([y_scales.min(), y_scales.max()]))
         cx.set_yticks(np.log2(Yticks))
         cx.set_yticklabels(Yticks)
+
+        Xticks = np.arange(0, glbl_power.max() + glbl_power.max() / 4, glbl_power.max() / 3)
+        cx.set_xticks(Xticks)
+        xlabels = ['%.3f' % i for i in Xticks]
+        cx.set_xticklabels(xlabels)
+
 
         # cx.yaxis.set_major_formatter(formatter)
 
@@ -535,12 +556,18 @@ class kCwt(object):
         dx.axhline(self.scale_avg_signif, color = 'k', linestyle = '--', linewidth = 1.)
 
         # plot the scale average for each time point.
-        dx.plot(self.Time, self.scale_avg, 'k-', linewidth = 1.5)
+        dx.plot(Time, self.scale_avg, 'k-', linewidth = 1.5)
         if raw:
-            dx.set_title('d) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
+            dx.set_title('(d) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
         else:
-            dx.set_title('c) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
-        xlabel = 'Time (%s)' % self.tunits
+            dx.set_title('(c) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
+
+        if x_type == 'dayofyear' :
+            xlabel = 'Julian Day'
+        elif x_type == 'date':
+            xlable = 'Time (days)'
+        else:
+            xlabel = 'Time (%s)' % self.tunits
         dx.set_xlabel(xlabel)
         if self.units != '':
           dx.set_ylabel(r'Average variance [$%s$]' % (self.units,))
@@ -553,7 +580,7 @@ class kCwt(object):
             dx.xaxis.grid(True, 'minor')
             fig.autofmt_xdate()
 
-            axis.set_xlim([self.Time.min(), self.Time.max()])
+        dx.set_xlim([Time.min(), Time.max()])
         #
 
         # pylab.draw()
