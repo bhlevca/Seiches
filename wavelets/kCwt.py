@@ -306,7 +306,7 @@ class kCwt(object):
 
         if x_type == 'dayofyear':
             Time = fft_utils.timestamp2doy(self.Time)
-        elif x_type == 'date':
+        else :
             Time = self.Time
 
 

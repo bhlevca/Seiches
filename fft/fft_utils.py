@@ -220,7 +220,8 @@ def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plott
         plt.show()
     # end
 
-def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None, log = False, plottitle = False):
+def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None, log = False, \
+                 plottitle = False, grid = False, fontsize = 18):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -239,11 +240,11 @@ def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth =
 
     # ax.xaxis.grid(True, 'major')
     ax.xaxis.grid(True, 'minor')
-    ax.grid(True)
-    plt.ylabel(ylabel).set_fontsize(16)
-    plt.xlabel(xlabel).set_fontsize(16)
+    ax.grid(grid)
+    plt.ylabel(ylabel).set_fontsize(fontsize)
+    plt.xlabel(xlabel).set_fontsize(fontsize)
     if plottitle:
-        plt.title(title).set_fontsize(20)
+        plt.title(title).set_fontsize(fontsize + 2)
 
     if legend != None:
         plt.legend(legend);
@@ -267,13 +268,13 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     ax = fig.add_subplot(111)
 
     i = 0
-    lst = ['-', '--', ':', '-.', '-', '--', ':', '-.']
+    lst = ['-', '--', '-.', ':.', '-', '--', ':', '-.']
     colors = ['b', 'y', 'm', 'r', 'c', 'g', 'k', 'aqua']
     for a in x_arr:
-        x = x_arr[i][1:]
-        y = y_arr[i][1:]
+        x = x_arr[i][3:]
+        y = y_arr[i][3:]
         if len(x_arr) < 4:
-            lwt = 3.2 - i
+            lwt = 3.8 - i / 2.
         else:
             lwt = 1.5 + i * 0.6
 
@@ -288,13 +289,13 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     i = 0
     Ymin = 10000000
     Ymax = 0
-    for a in x_arr:
+    for a in ci05:  # x_arr:
         if log:
             x = a[1:]
             y1 = ci05[0]
             y2 = ci95[0]
-            ymx = max(y_arr[0][1:])
-            ymin = min(y_arr[0][1:])
+            ymx = max(y_arr[0][3:])
+            ymin = min(y_arr[0][3:])
             y0 = ymx * 0.65
             # Choose a locatioon for the CI bar
             ax.set_yscale('log')
@@ -305,8 +306,8 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
             Ymin = min(Ymin, ymin)
             Ymax = max(Ymax, ymx)
         else:
-            y1 = ci05[i][1:]
-            y2 = ci95[i][1:]
+            y1 = ci05[i][3:]
+            y2 = ci95[i][3:]
             sd = 0.65 - i * 0.15
 
             ax.plot(x, y1, x, y2, color = [sd, sd, sd], alpha = 0.0)
@@ -372,7 +373,7 @@ def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, 
 def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.8, plottitle = False, fontsize = 18, \
                        doy = False, minmax = None, grid = False):
 
-    fig = plt.figure(facecolor = 'w', edgecolor = 'k', grid = False)
+    fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
 

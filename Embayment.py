@@ -13,6 +13,7 @@ import numpy as np
 import math
 import matplotlib.mlab as mlab
 import EmbaymentPlot
+import EmbaymentNonlinear
 from optparse import OptionParser
 
 path = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/LakeOntario-data'
@@ -23,34 +24,34 @@ path4 = '/home/bogdan/Documents/UofT/PhD/Data_Files/Toberymory_tides'
 
 
 embayments = {
-              'FMB' : {'A':850000., 'B':25. , 'H':1., 'L':130.,
+              'FMB' : {'A':850000., 'B':25. , 'H':1., 'L':130., 'LL':1600, 'h':2.5, 'BB':30,
                         'Period':[12.4, 5.2, 1.28, 0.8, 0.5, 0.36] ,  # h
                         'Amplitude':[0.034, 0.022, 0.017, 0.023, 0.021, 0.022],  # m
                         'Amplitude_bay':[0.024, 0.02, 0.014, 0.012, 0.0045, 0.002],  # m
                         'Phase':[5, 22, -15, 39, -4.6, -3.0],  # rad
                         'CD':0.0032,
                         'filename':path + '/Inner_Harbour_July_processed.csv'},
-              'Tob-IBP-ex' : {'A':150000., 'B':140. , 'H':2.143, 'L':570.,
-                       'Period':[16.8 / 60, 12.0 / 60, 8.0 / 60, 5.35 / 60, 4.5 / 60] ,  # h
-                       'Amplitude':[0.02, 0.018, 0.016, 0.015, 0.018],  # m
-                       'Phase':[0, 0, 0, 0, 0],  # rad
+              'Tob-IBP-ex' : {'A':150000., 'B':140. , 'H':2.143, 'L':570., 'LL':1000, 'h':1.5, 'BB':100,
+                       'Period':[16.8 / 60, 15.8 / 60, 12.0 / 60, 8.0 / 60, 5.35 / 60, 4.5 / 60] ,  # h
+                       'Amplitude':[0.02, 0.02, 0.018, 0.016, 0.015, 0.018],  # m
+                       'Phase':[0, 0, 0, 0, 0, 0],  # rad
                        'CD':0.0032,
                        'filename':path4 + '/LL1.csv'},
-              'Tob-IBP' : {'A':145000., 'B':140. , 'H':2.143, 'L':570.,
-                       'Period':[16.8 / 60, 12.0 / 60, 8.0 / 60] ,  # h
-                       'Amplitude':[0.02, 0.018, 0.016],  # m
-                       'Amplitude_bay':[0.09, 0.043, 0.058],  # m
-                       'Phase':[0, 0, 0],  # rad
+              'Tob-IBP' : {'A':145000., 'B':140. , 'H':2.143, 'L':570., 'LL':1000, 'h':1.5, 'BB':100,
+                       'Period':[16.8 / 60, 15.8 / 60, 12.0 / 60, 8.0 / 60] ,  # h
+                       'Amplitude':[0.02, 0.02, 0.018, 0.016],  # m
+                       'Amplitude_bay':[0.09, 0.11, 0.043, 0.058],  # m
+                       'Phase':[0, 0, 0, 0],  # rad
                        'CD':0.0032,
                        'filename':path4 + '/LL1.csv'},
-              'Tob-CIH' : {'A':64000., 'B':56. , 'H':1.9, 'L':175.,
+              'Tob-CIH' : {'A':64000., 'B':56. , 'H':1.9, 'L':175., 'LL':490, 'h':1.5, 'BB':50,
                        'Period':[16.8 / 60, 12.0 / 60, 9.2 / 60] ,  # h
                        'Amplitude':[0.02, 0.018, 0.014],  # m
                        'Amplitude_bay':[0.025, 0.078, 0.037],  # m
                        'Phase':[0, 0, 0],  # rad
                        'CD':0.0032,
                        'filename':path4 + '/LL4.csv'},
-              'L-SUP' : {'A':180000., 'B':30. , 'H':1., 'L':2000.,
+              'L-SUP' : {'A':180000., 'B':30. , 'H':1., 'L':2000., 'LL':1400, 'h':1.5, 'BB':100,
                        'Period':[2.9, 2.9] ,  # h
                        'Amplitude':[0.1, 0.1],  # m
                        'Phase':[0, 0],  # rad
@@ -83,6 +84,8 @@ class Embayment(object):
         self.B = dict['B']
         self.H = dict['H']
         self.L = dict['L']
+        self.LL = dict['LL']
+        self.h = dict['h']
         self.Period = dict['Period']
         self.Amplitude = dict['Amplitude']
         self.Phase = dict['Phase']
@@ -156,6 +159,40 @@ class Embayment(object):
     # end plotLakeLevels
 
     @staticmethod
+    def plotSingleSideAplitudeSpectrumFreqAnalytic(graphobj, num_segments, lake_name, bay_name, funits = "Hz", y_label = None, title = None,
+                                            log = False, fontsize = 20, tunits = None, plottitle = False, grid = False, ymax = None, \
+                                            LL = None, B = None, h = None, a0 = None):
+
+        f = graphobj.plotSingleSideAplitudeSpectrumFreq
+
+        if num_segments == 1:
+            [title, xlabel, ylabel, xa, ya, legend, log, plottitle, ymax_lim] = \
+             f(lake_name, bay_name, funits, y_label, title, log, fontsize, tunits, plottitle, grid, ymax, graph = False)
+        else:
+            [title, xlabel, ylabel, xa, ya, ci05, ci95, legend, log, fontsize, plottitle, ymax] = \
+             f(lake_name, bay_name, funits, y_label, title, log, fontsize, tunits, plottitle, grid, ymax, graph = False)
+
+        # add the theory curves
+
+        bay = EmbaymentNonlinear.BayGeometry(LL, B, h)
+        embNon = EmbaymentNonlinear.EmbaymentNonlinear(bay)
+        # convert cph to rad/sec
+        om = 2 * np.pi * xa[0] / 3600
+        amp = embNon.calculateResponseVsAngularFreqSlow(a0, om, False)
+        # amp = embNon.calculateResponseVsFrequency(a0, om, False)
+
+        xa = np.append(xa, [xa[0]], axis = 0)
+        ya = np.append(ya, [amp], axis = 0)
+        ld = legend.append('Analytical solution')
+        if num_segments == 1:
+            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, ld, legend, plottitle, ymax_lim = ymax)
+        else:
+            fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
+                                                log = log, fontsize = fontsize, plottitle = plottitle, grid = grid, ymax_lim = ymax)
+
+    # end plotSingleSideAplitudeSpectrumFreq
+
+    @staticmethod
     def SpectralAnalysis(bay, b_wavelets = False, window = "hanning", num_segments = None, tunits = 'day', funits = "Hz", \
                           filter = None, log = False, doy = False, grid = False):
 
@@ -180,8 +217,8 @@ class Embayment(object):
         # Fathom Five National Park Outer Boat Passage
         elif bay == 'Tob-OBP':
             # NOTE:lake amplit is lower so switch places
-            fftsa = FFTGraphs.FFTGraphs(path4, 'LL3.csv', 'LL2.csv', show, tunits)
-            # fftsa = FFTGraphs.FFTGraphs(path4, 'LL3-28jul2010.csv', 'LL2-28jul2010.csv', show , tunits)
+            # fftsa = FFTGraphs.FFTGraphs(path4, 'LL3.csv', 'LL2.csv', show, tunits)
+            fftsa = FFTGraphs.FFTGraphs(path4, 'LL3-28jul2010.csv', 'LL2-28jul2010.csv', show , tunits)
             lake_name = "Harbour Island - lake"  # LL3.csv is actually the lake
             bay_name = "Outer Boat Passage"
         # Fathom Five National Park Inner Boat Passage
@@ -246,16 +283,45 @@ class Embayment(object):
             showLevels = False
             detrend = False
             draw = False
-            fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, num_segments, filter, log)
+            [Time, y, x05, x95, fftx, freq, mx] = fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, num_segments, filter, log)
+            phase = np.zeros(len(fftx), dtype = np.float)
+            deg = True
+            phase = np.angle(fftx, deg)
+            print "*****************************"
+            print " PHASEs"
+            for i in range(0, len(fftx)):
+                print "Period %f  phase:%f  amplit:%f" % (1. / freq[i] / 3600, phase[i], mx[i])
+            print "*****************************"
+
             fftsa.plotLakeLevels(lake_name, bay_name, detrend, Embayment.printtitle, doy = doy, grid = grid)
-            fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits, y_label = None, title = None, log = log, \
-                                                     fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle, grid = grid)
+
+            grid = True  # just for FFT
+            if bay == 'Tob-OBP' :  # to have the same scale as IBP
+                ymax = 0.14
+            else:
+                ymax = None
+
+
+            # fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits, y_label = None, title = None, log = log, \
+            #                                         fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle, grid = grid, ymax = ymax)
+
+            dict = embayments[bay]
+            B = dict['BB']
+            LL = dict['LL']
+            h = dict['h']
+            a0 = 0.13
+            Embayment.plotSingleSideAplitudeSpectrumFreqAnalytic(fftsa, num_segments, lake_name, bay_name, funits, y_label = None, title = None, log = log, \
+                                                     fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle, grid = grid, ymax = ymax, \
+                                                     LL = LL, B = B, h = h, a0 = a0)
+
+            grid = False
+
             fftsa.plotPowerDensitySpectrumFreq(lake_name, bay_name, funits, plottitle = Embayment.printtitle, grid = grid)
             fftsa.plotSingleSideAplitudeSpectrumTime(lake_name, bay_name, plottitle = Embayment.printtitle, grid = grid)
 
             # fftsa.plotZoomedSingleSideAplitudeSpectrumFreq()
             # fftsa.plotZoomedSingleSideAplitudeSpectrumTime()
-            fftsa.plotCospectralDensity(log = log, grid = grid)
+            fftsa.plotCospectralDensity(log = log)
             # fftsa.plotPhase()
 
             if b_wavelets:
@@ -294,7 +360,7 @@ class Embayment(object):
     # end SpectralAnalysis
 
     @staticmethod
-    def HarmonicAnalysis(filename, freq_hours):
+    def HarmonicAnalysis(filename, path, freq_hours):
 
         [Time, SensorDepth] = fft_utils.readFile(path, filename)
         y = sp.signal.detrend(SensorDepth)
@@ -319,12 +385,15 @@ class Embayment(object):
         A = 2.0 / len(y) * A
         B = 2.0 / len(y) * B
         R = np.sqrt(A ** 2 + B ** 2)
-        print ("amplitude (m): %f") % R
+        PHI = np.arctan(-B / A)
+        PHI2 = np.arctan2(B, A)
+        print ("period (h):%f  amplitude (m): %f - phase (deg): %f  (rad):%f  (rad2):%f") % (freq_hours, R, PHI * 180 / np.pi, PHI, PHI2)
+
     # end HarmonicAnalysis
 
     @staticmethod
     def waveletAnalysis(bay, title, tunits, slevel, avg1, avg2, val1, val2, \
-                        dj = None, s0 = None, J = None, alpha = None):
+                        dj = None, s0 = None, J = None, alpha = None, debug = False):
 
         ppath = path
         if bay == 'FMB':
@@ -361,7 +430,14 @@ class Embayment(object):
         J = -1  # 7 / dj                      # Seven powers of two with dj sub-octaves
         alpha = 0.5  # Lag-1 autocorrelation for white noise
 
-        kwavelet.doSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
+        [wave, scales, freq, coi, fft, fftfreqs, iwave, power, fft_power, amplitude, phase] = \
+            kwavelet.doSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
+        if debug:
+            print "fftfreq=", fftfreqs
+            print "amplit=", amplitude
+            print "phase=", phase
+
+
         ylabel_ts = "amplitude"
         yunits_ts = 'm'
         xlabel_sc = ""
@@ -396,7 +472,7 @@ class Embayment(object):
         [t, X, c, k, w, x0, v0, R] = embPlot.Response(days)
         #
         # embPlot.plotForcingResponse(t, printtitle = Embayment.printtitle)    # too simple, unattractive
-        # embPlot.plotRespVsOmegaVarAmplit(printtitle = Embayment.printtitle)  # uses the spring equation, not necessaru fo the paper
+        embPlot.plotRespVsOmegaVarAmplit(printtitle = Embayment.printtitle)  # uses the spring equation, not necessary for the paper
         # embPlot.plotPhaseVsOmega(printtitle = Embayment.printtitle)          #not necessary for the paper
         #
         embPlot.plotRespVsOmegaVarFric(printtitle = Embayment.printtitle)
@@ -404,7 +480,7 @@ class Embayment(object):
         embPlot.plotRespVsOmegaVarArea(printtitle = Embayment.printtitle)
         embPlot.plotRespVsOmegaVarMouth(printtitle = Embayment.printtitle)
 
-        # embPlot.plotRespVsOmegaVarMouthCurves(printtitle = Embayment.printtitle)  # trebitz
+        embPlot.plotRespVsOmegaVarMouthCurves(printtitle = Embayment.printtitle)  # trebitz
         # embPlot.plotDimensionlessResponse(printtitle = Embayment.printtitle)
         embPlot.show()
 
@@ -468,12 +544,12 @@ class Embayment(object):
 
         doSpectral = True
         dowavelets = False  # Scipy
-        doWavelet = True  # Terrence & Compo
-        doHarmonic = False
+        doWavelet = False  # Terrence & Compo
+        doHarmonic = True
         doFiltering = False
         tunits = 'day'  # can be 'sec', 'hour'
         window = 'hanning'
-        num_segments = 10
+        num_segments = 4
 
         btype = 'band'
         if btype == 'low':  # pass freq < lowcutoff
@@ -508,14 +584,23 @@ class Embayment(object):
 
         title = bay + ""
         if doWavelet :
-            Embayment.waveletAnalysis(bay, title, tunits, slevel, avg1, avg2, val1, val2)
+            debug = False
+            Embayment.waveletAnalysis(bay, title, tunits, slevel, avg1, avg2, val1, val2, debug = debug)
 
         if doHarmonic:
-            freq_hours = 4.5
-            Embayment.HarmonicAnalysis('Lake_Ontario_1115682_processed.csv', freq_hours)
-            Embayment.HarmonicAnalysis('LO_Burlington-Mar23-Apr23-2011.csv', freq_hours)
-            Embayment.HarmonicAnalysis('LO_Burlington-JAN-DEC-2011_date.csv', freq_hours)
-            Embayment.HarmonicAnalysis('LO_Burlington-Apr26-Apr28-2011.csv', freq_hours)
+            if bay == "":
+                freq_hours = 4.5
+                Embayment.HarmonicAnalysis('Lake_Ontario_1115682_processed.csv', path, freq_hours)
+                Embayment.HarmonicAnalysis('LO_Burlington-Mar23-Apr23-2011.csv', path, freq_hours)
+                Embayment.HarmonicAnalysis('LO_Burlington-JAN-DEC-2011_date.csv', path, freq_hours)
+                Embayment.HarmonicAnalysis('LO_Burlington-Apr26-Apr28-2011.csv', path, freq_hours)
+            if bay == "Tob-IBP":
+                freq_hours = 0.266688
+                Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
+                freq_hours = 0.120010
+                Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
+                freq_hours = 0.07742
+                Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
     # end CalculateSpectral
 
 # end Embayment
@@ -527,7 +612,7 @@ if __name__ == '__main__':
     # bay = 'BUR'
     # bay = 'Tob-OBP'
     bay = 'Tob-IBP'
-    bay = 'Tob-CIH'
+    # bay = 'Tob-CIH'
     # bay = 'Tob_All'
     # bay = 'Tob-HI'
     # bay = 'L-SUP'

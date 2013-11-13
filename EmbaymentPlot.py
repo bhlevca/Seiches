@@ -183,9 +183,9 @@ class EmbaymentPlot(object):
             x0 = 0.0; v0 = 0;
             m = 1  # unit of mass
 
-            O = self.B * self.H;
+            O = self.B * self.H
             # head loss coeff. includes flow separation and bottom friction
-            fm = self.L * (f / self.L + self.Cd / self.H);
+            fm = self.L * (f / self.L + self.Cd / self.H)
 
             # linearized loss term coefficient
             n0 = 8 * fm * self.A / (3 * np.pi * O * self.L)
@@ -296,17 +296,12 @@ class EmbaymentPlot(object):
         ctr = 0
         Fa_sum = 0.
         # variable amplitude
-        for i in range(0, len(self.Fa)):
-            self.G[i] = self.fourierODE(m, self.c[i], self.k[i], self.Fa[i], om)
+        O = self.B * self.H
+        # head loss coeff. includes flow separation and bottom friction
+        fm = self.L * (f / self.L + self.Cd / self.H)
+        n0 = 8 * fm * self.A / (3 * np.pi * O * self.L)
 
-            # fric term like parallel circuits
-            # ctr += 1 / self.c[i]
-            # Fa_sum += self.Fa[i]
-        # end for
-
-        # if we want to calculate the superimposed response
-        # ct = 1 / ctr
-        # GT = self.fourierODE(m, ct, self.k[0], Fa_sum, om);
+        eps = self.w0 / 8.
 
         fig = plt.figure(facecolor = 'w', edgecolor = 'k')
         legend = []
@@ -321,19 +316,22 @@ class EmbaymentPlot(object):
         plt.xticks(fontsize = 20)
         plt.yticks(fontsize = 20)
 
-        eps = self.w0 / 8.
         for i in range(0, len(self.Amplitude)):
+
+            bay_ampl = self.amplitudef(self.Amplitude[i], om, self.w0, n0)  # self.w[1], w0, n0)
             if abs(self.w0 - self.w[i]) < eps :
-                plt.plot(om / self.w0, abs(self.G[i]), '-', lw = 4.5)
+                plt.plot(om / self.w0, abs(bay_ampl), '-', lw = 4.5)
             else:
-                plt.plot(om / self.w0, abs(self.G[i]), '--', lw = 2.5)
+                plt.plot(om / self.w0, abs(bay_ampl), '--', lw = 2.5)
+
             lgnd = "T(%d)=%.3f   %s=%.3f" % (i + 1, self.Period[i], alpha0, self.Amplitude[i])
             legend.append(lgnd)
-            plt.vlines(self.w[i] / self.w0, 0, np.max(abs(self.G[i])), linestyles = 'dashed', lw = 1.5)
+
+            plt.vlines(self.w[i] / self.w0, 0, np.max(abs(bay_ampl)), linestyles = 'dashed', lw = 1.5)
             ant = '%s$_%d$' % (omega, i + 1)
             delta = (ntimes * self.w0 - start) / steps
             j = int((self.w[i] - start) / delta)  # - ntimes * 2
-            plt.annotate(ant, xy = (self.w[i] / self.w0, abs(self.G[i][j])), xytext = (60, 10), \
+            plt.annotate(ant, xy = (self.w[i] / self.w0, abs(bay_ampl[j])), xytext = (60, 10), \
                         arrowprops = dict(arrowstyle = '->', color = 'black'), size = 18, \
                         textcoords = 'offset points', ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
         # end for
@@ -638,19 +636,14 @@ class EmbaymentPlot(object):
         # plt.plot(om / w0, abs(GT))
         plt.legend(legend, fontsize = '18')
 
-    def plotRespVsOmegaVarMouthCurves(self, printtitle = False, grid = False):
-        '''Plot the response |G(w)| versus frequency (omega)
-           for various mouth areas
-        '''
-
-        # lake Superior embayments
+    def plotModelLines(self, T = 1.5, lw = 1, ls = '-'):
         steps = 1000
         start = 0.01
 
         H = 1.5
         stop = 40
         Amplitude = 0.1
-        Period = 1.5
+        Period = T
         L = 2000
         Cd = 0.0032
         b = np.linspace(start , stop, steps)
@@ -659,8 +652,8 @@ class EmbaymentPlot(object):
 
         bay_ampl = np.zeros(steps)
         legend = []
-        ls = ['bo', 'g^', 'rs']
-        fig = plt.figure(facecolor = 'w', edgecolor = 'k')
+
+
         plt.xscale('log')
         p = 0
         for A in aa:
@@ -681,31 +674,44 @@ class EmbaymentPlot(object):
                 # print 'embayment eigen frequency f=%f (Hz)' % freq0
 
                 T0 = 1 / freq0  # sec
-                print 'embayment eigen period T=%f (hours) = %f (min)' % (T0 / 3600, T0 / 60)
+                # print 'embayment eigen period T=%f (hours) = %f (min)' % (T0 / 3600, T0 / 60)
 
                 freq = 1. / (Period * 3600)
                 w = 2 * np.pi * freq
 
                 bay_ampl[j] = self.amplitudef(Amplitude, w, w0, n0)
-                print "mouth area=%f  - bay amplit=%f" % (O, bay_ampl[j])
+                # print "mouth area=%f  - bay amplit=%f" % (O, bay_ampl[j])
             # end for j
 
-            plt.semilogx(b * H, bay_ampl / Amplitude)
-            txt = "A = %d ha" % (A / 10000)
-
-            print "*** A = %s ***" % txt
-            '''
-            plt.annotate(txt, xy = (stop / 3, bay_ampl[int(j / 2)] / Amplitude), xytext = (10, 10), \
-                        arrowprops = dict(arrowstyle = '->', color = 'black'), size = 12, \
-                        textcoords = 'offset points', ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
-            '''
+            plt.semilogx(b * H, bay_ampl / Amplitude, lw = lw, ls = ls)
             p += 1
+            ar = A / 10000
+            if ar < 0.1 : ar = 0.1
+            txt = "A = %.1f ha" % (ar)
             legend.append(txt)
-            plt.ylabel('Relative Amplitude').set_fontsize(22)
-            xlabel = '%s/%s' % (omega, omega0)
-            plt.xlabel(xlabel).set_fontsize(22)
+            # print "*** A = %s ***" % txt
         # end for jj
+
+        plt.ylabel('Relative Amplitude').set_fontsize(22)
+        xlabel = 'Mouth area ($m^2$)'
+        plt.xlabel(xlabel).set_fontsize(22)
         plt.legend(legend, loc = 2)
+        plt.xticks(fontsize = 20)
+        plt.yticks(fontsize = 20)
+
+        # end for A
+    # end function
+
+    def plotRespVsOmegaVarMouthCurves(self, printtitle = False, grid = False):
+        '''Plot the response |G(w)| versus frequency (omega)
+           for various mouth areas
+        '''
+        fig = plt.figure(facecolor = 'w', edgecolor = 'k')
+        self.plotModelLines(T = 1.5, lw = 2, ls = '-')
+        self.plotModelLines(T = 7.9, lw = 1, ls = ':')
+        # lake Superior embayments
+
+        ls = ['bo', 'g^', 'rs']
         path = "/home/bogdan/Documents/UofT/PhD/docear/projects/Papers-Written/Environmental_Fluid_Mechanics/support_data"
         filename = "trebitz_resp.txt"
         filename2 = "trebitz_resp_no_lagoon.txt"
@@ -718,14 +724,14 @@ class EmbaymentPlot(object):
         ymin = np.min(RelativeAmplit)
         for i in range(0, len(Area)):
             plt.annotate(Area[i], (MouthArea[i], RelativeAmplit[i]), xytext = (xmax / 8., ymax / 8.), \
-                         textcoords = 'offset points', ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
+                         textcoords = 'offset points', ha = 'left', va = 'center', size = 18, bbox = dict(fc = 'white', ec = 'none'))
         plt.grid(grid)
 
         # statistics
         x = np.array(MouthArea)
         y = np.array(RelativeAmplit)
         [r2, slope, intercept, r_value, p_value, std_err] = ustats.rsquared(x, y)
-        ustats.plot_regression(x, y, slope, intercept, point_labels = None, x_label = "Mouth area m$^2$", y_label = "Relative amplitude", title = None, \
+        ustats.plot_regression(x, y, slope, intercept, point_labels = None, x_label = "Mouth area (m$^2$)", y_label = "Relative amplitude", title = None, \
                     r_value = r_value, p_value = p_value, fontsize = 22)
 
         # for no outliers
@@ -738,7 +744,7 @@ class EmbaymentPlot(object):
         y = np.array(RelativeAmplit)
         [r2, slope, intercept, r_value, p_value, std_err] = ustats.rsquared(x, y)
         # pass the regression line params for no outliers
-        ustats.plot_regression(x, y, slope2, intercept2, point_labels = None, x_label = "Area ha", y_label = "Relative amplitude", title = None, \
+        ustats.plot_regression(x, y, slope2, intercept2, point_labels = None, x_label = "Area (ha)", y_label = "Relative amplitude", title = None, \
                     r_value = r_value2, p_value = p_value2, fontsize = 22)
 
     # end def

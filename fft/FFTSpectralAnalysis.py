@@ -142,28 +142,30 @@ class FFTSpectralAnalysis(object):
 
     # end
 
-    def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, log = False):
-
-        Time, SensorDepth = data
-        x05 = None
-        x95 = None
-
-        if Time[1] < 695056:
-            Time += 695056
-
-        if num_segments == 1:
-            [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)
-        else:
-            [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
-            fftx = avg_fftx
-            mx = avg_amplit
-            power = avg_power
-            y = sp.signal.detrend(SensorDepth)
-            NFFT = len(Time)
-            NumUniquePts = int(math.ceil((NFFT / 2) + 1))
-        # end if
-
-        return [y, Time, fftx, NumUniquePts, mx, f, power, x05, x95]
+#===============================================================================
+#     def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, log = False):
+#
+#         Time, SensorDepth = data
+#         x05 = None
+#         x95 = None
+#
+#         if Time[1] < 695056:
+#             Time += 695056
+#
+#         if num_segments == 1:
+#             [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)
+#         else:
+#             [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
+#             fftx = avg_fftx
+#             mx = avg_amplit
+#             power = avg_power
+#             y = sp.signal.detrend(SensorDepth)
+#             NFFT = len(Time)
+#             NumUniquePts = int(math.ceil((NFFT / 2) + 1))
+#         # end if
+#
+#         return [y, Time, fftx, NumUniquePts, mx, f, power, x05, x95]
+#===============================================================================
 
 
     def fourierTSAnalysis(self, Time, SensorDepth, draw = 'True', tunits = 'sec', log = False):
@@ -273,7 +275,7 @@ class FFTSpectralAnalysis(object):
         # same as
         # freq = np.fft.fftfreq(NFFT, d = dt_s)[:NumUniquePts]
 
-        return [yd, Time, fftx, NumUniquePts, mx, freq, power]
+        return [yd, Time, fft2, NumUniquePts, mx, freq, power]
     # end
 
     def Wind_Flattop(self, Spec):
@@ -335,6 +337,7 @@ class FFTSpectralAnalysis(object):
                      NumUniquePts  - size of the unique FFT values
                      mx            - the value of the single-sided FFT amplitude
                      f             - linear frequency vector for the mx points
+                     ph            - phase vector for the mx points
         '''
         den = 2 * nseg
         N = len(Time)
@@ -355,15 +358,15 @@ class FFTSpectralAnalysis(object):
         # perform FFT
         y = np.zeros((den - 1, M), dtype = np.float)  # data segments
         Tm = np.zeros((den - 1, M), dtype = np.float)  # time segments
-        fftx = np.zeros((den - 1, M), dtype = np.complex)  # transform segments
+        fftx = np.zeros((den - 1, M / 2 + 1), dtype = np.complex)  # transform segments
         NumUniquePts = np.zeros(den - 1)  # point segments
         amplit = np.zeros((den - 1, M / 2 + 1), dtype = np.float)  # amplit segments
         f = np.zeros((den - 1, M / 2 + 1), dtype = np.float)  # freq segments
         power = np.zeros((den - 1, M / 2 + 1), dtype = np.complex)  # power segments
 
         for i in range(0, den - 1):
-            [y[i], Tm[i], fftx[i], NumUniquePts[i], amplit[i], f[i], power[i]] = self.fourierTSAnalysis(t[i], x[i], draw, tunits, window)
-
+            a = self.fourierTSAnalysis(t[i], x[i], draw, tunits, window)
+            [y[i], Tm[i], fftx[i], NumUniquePts[i], amplit[i], f[i], power[i]] = a
 
         avg_amplit = 0
         avg_power = 0
@@ -379,6 +382,8 @@ class FFTSpectralAnalysis(object):
         avg_power /= den - 1
         # avg_y /= den - 1 <= pointless
         avg_fftx /= den - 1
+
+
 
         interval_len = len(Time) / nseg
         data_len = len(Time)

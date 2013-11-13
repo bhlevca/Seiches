@@ -139,7 +139,7 @@ class FFTGraphs(object):
         else:
             raise Exception("Both filename and data are missing ")
 
-        return [self.Time, self.y, self.x05, self.x95, self.power]
+        return [self.Time, self.y, self.x05, self.x95, self.fftx, self.f, self.mx]
     # end doSpectralAnalysis
 
 
@@ -188,7 +188,8 @@ class FFTGraphs(object):
 
 
     def plotSingleSideAplitudeSpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None,
-                                            log = False, fontsize = 20, tunits = None, plottitle = False, grid = False):
+                                            log = False, fontsize = 20, tunits = None, plottitle = False, grid = False, \
+                                            ymax = None, graph = True):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -237,13 +238,21 @@ class FFTGraphs(object):
                     ci05 = [self.x05]
                     ci95 = [self.x95]
             # end
-            if self.num_segments == 1:
-                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle)
+            if graph:
+                if self.num_segments == 1:
+                    fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle, ymax_lim = ymax)
+                else:
+                    fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
+                                                    log = log, fontsize = fontsize, plottitle = plottitle, grid = grid, ymax_lim = ymax)
             else:
-                fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
-                                                log = log, fontsize = fontsize, plottitle = plottitle, grid = grid)
-
+                if self.num_segments == 1:
+                    return [title, xlabel, ylabel, xa, ya, legend, log, plottitle, ymax_lim]
+                else:
+                    return [title, xlabel, ylabel, xa, ya, ci05, ci95, legend, log, fontsize, plottitle, ymax]
     # end plotSingleSideAplitudeSpectrumFreq
+
+
+
 
 
 
@@ -257,7 +266,7 @@ class FFTGraphs(object):
         return (x05, x95)
 
     def plotPowerDensitySpectrumFreq(self, lake_name, bay_name, funits = "Hz", y_label = None, title = None, \
-                                     log = False, fontsize = 20, tunits = None, plottitle = False):
+                                     log = False, fontsize = 20, tunits = None, plottitle = False, grid = False):
 
         # smooth only if not segmented
         if self.num_segments == 1:
@@ -314,10 +323,10 @@ class FFTGraphs(object):
                     ci95 = [self.x95]
             # end
             if self.num_segments == 1:
-                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle)
+                fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle, grid = grid)
             else:
                 fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
-                                               log = log, fontsize = fontsize, plottitle = plottitle)
+                                               log = log, fontsize = fontsize, plottitle = plottitle, grid = grid)
 
     # end plotPowerDensitySpectrumFreq
 
@@ -400,7 +409,7 @@ class FFTGraphs(object):
         plt.show()
 
     def plotSingleSideAplitudeSpectrumTime(self, lake_name, bay_name, y_label = None, title = None, \
-                                           ymax_lim = None, log = False, tunits = None, plottitle = False):
+                                           ymax_lim = None, log = False, tunits = None, plottitle = False, grid = False):
         sSeries = fft_utils.smoothSeries(self.mx, 5)
         if self.filename1 != None:
             sSeries1 = fft_utils.smoothSeries(self.mx1, 5);
@@ -491,7 +500,7 @@ class FFTGraphs(object):
             zsSeries1 = fft_utils.smoothSeries(self.mx1, 5);
             convolution = zsSeries * zsSeries1.conjugate()
             ya = np.array([ convolution])
-            legend = ['Cospectra']
+            legend = ['Cospectrum']
 
             if self.show:
                 # Plot single - sided amplitude spectrum.
