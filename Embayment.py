@@ -161,7 +161,7 @@ class Embayment(object):
     @staticmethod
     def plotSingleSideAplitudeSpectrumFreqAnalytic(graphobj, num_segments, lake_name, bay_name, funits = "Hz", y_label = None, title = None,
                                             log = False, fontsize = 20, tunits = None, plottitle = False, grid = False, ymax = None, \
-                                            LL = None, B = None, h = None, a0 = None):
+                                            LL = None, B = None, h = None, a0 = None, bay = None):
 
         f = graphobj.plotSingleSideAplitudeSpectrumFreq
 
@@ -174,16 +174,24 @@ class Embayment(object):
 
         # add the theory curves
 
-        bay = EmbaymentNonlinear.BayGeometry(LL, B, h)
-        embNon = EmbaymentNonlinear.EmbaymentNonlinear(bay)
+        embg = EmbaymentNonlinear.BayGeometry(LL, B, h)
+        embNon = EmbaymentNonlinear.EmbaymentNonlinear(embg)
         # convert cph to rad/sec
         om = 2 * np.pi * xa[0] / 3600
         amp = embNon.calculateResponseVsAngularFreqSlow(a0, om, False)
         # amp = embNon.calculateResponseVsFrequency(a0, om, False)
-
         xa = np.append(xa, [xa[0]], axis = 0)
         ya = np.append(ya, [amp], axis = 0)
-        ld = legend.append('Analytical solution')
+        ld = legend.append('Nonlinear Analytical solution')
+
+        if bay != None:
+            bay = Embayment(bay)
+            embPlot = EmbaymentPlot.EmbaymentPlot(bay)
+            amp_helm = embPlot.calculateResponseVsAngularFreqSlow(0.015, om, False)
+            xa = np.append(xa, [xa[0]], axis = 0)
+            ya = np.append(ya, [amp_helm], axis = 0)
+            ld = legend.append('Helmoltz resonator solution')
+
         if num_segments == 1:
             fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, ld, legend, plottitle, ymax_lim = ymax)
         else:
@@ -309,10 +317,10 @@ class Embayment(object):
             B = dict['BB']
             LL = dict['LL']
             h = dict['h']
-            a0 = 0.13
+            a0 = 0.14
             Embayment.plotSingleSideAplitudeSpectrumFreqAnalytic(fftsa, num_segments, lake_name, bay_name, funits, y_label = None, title = None, log = log, \
                                                      fontsize = 20, tunits = tunits, plottitle = Embayment.printtitle, grid = grid, ymax = ymax, \
-                                                     LL = LL, B = B, h = h, a0 = a0)
+                                                     LL = LL, B = B, h = h, a0 = a0, bay = bay)
 
             grid = False
 

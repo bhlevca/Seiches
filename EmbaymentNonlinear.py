@@ -98,16 +98,18 @@ class EmbaymentNonlinear(object):
 
         # calculate independent variables
         T = 1. / freq
-        C = np.sqrt(self.g * h)  # phase velocity
+        C = np.sqrt(self.g * self.h)  # phase velocity
 
         # WRONG om = 2 * np.pi * freq
         # WRONG k = om / C  # wavenumber
-        lamd = C / freq
+        # WRONG lamd = C / freq
+        # WRONG k = 2 * np.pi / lamd
+        # WRONG om = np.sqrt(self.g * k * np.tanh(k * self.h))  # dispersion relation
 
-        k = 2 * np.pi / lamd
-        om = np.sqrt(self.g * k * np.tanh(k * h))  # dispersion relation
+        om = 2 * np.pi * freq
+        k = self.dispersion_w(om, self.h)
 
-        eps = k * a0  # or k*a0/np.pi ?       # the wave steepnes/slope
+        eps = k * a0  # or k*a0/np.pi ?       # the wave steepness/slope
 
         # deal with the closures
         self.initialiseScaledDimsFunction(eps)
@@ -127,11 +129,14 @@ class EmbaymentNonlinear(object):
         for i in range(0, len(x1)):
             zf[i] = 0.5 * Q * a0 ** 2 * np.cos(Kf * (x1[i] + L1)) * np.real(Gamma / Z * np.exp(-2j * om * t1))
 
-        legend = ["wl0", "wl300", "wlend"]
-        fft_utils.plot_n_Array("Bay Water Levels in time", "time (s)", "water level (m)", [t1, t1, t1], [zf[0], zf[300], zf[len(x1) - 1]], legend, plottitle = "title", fontsize = 20)
 
-        legend = ["wlend", "w300", "w700", "w600", "w227"]
-        fft_utils.plot_n_Array("Bay Water Levels in space", "x (m)", "water level (m)", [x1, x1, x1, x1, x1], [zf[:, 0], zf[:, 300], zf[:, 700], zf[:, 600], zf[:, 227]], legend, plottitle = "title", fontsize = 20)
+#===============================================================================
+#         legend = ["wl0", "wl300", "wlend"]
+#         fft_utils.plot_n_Array("Bay Water Levels in time", "time (s)", "water level (m)", [t1, t1, t1], [zf[0], zf[300], zf[len(x1) - 1]], legend, plottitle = "title", fontsize = 20)
+#
+#         legend = ["wlend", "w300", "w700", "w600", "w227"]
+#         fft_utils.plot_n_Array("Bay Water Levels in space", "x (m)", "water level (m)", [x1, x1, x1, x1, x1], [zf[:, 0], zf[:, 300], zf[:, 700], zf[:, 600], zf[:, 227]], legend, plottitle = "title", fontsize = 20)
+#===============================================================================
 
 
 
@@ -151,12 +156,14 @@ class EmbaymentNonlinear(object):
         for KL in kl:
             z = np.cos(KL) + 2 * Kf * W1 / np.pi * np.sin(KL) * np.log(2 * self.gam * Kf * W1 / np.pi / np.e) - 1j * Kf * W1 * np.sin(KL)
             Gamma2 = 1 - np.exp(2j * KL / Cg / C)
-            AG[i] = Q * a0 ** 2 * Gamma2 / z / 2
-            AA[i] = Q * a0 ** 2 / z / 2
+            AG[i] = -Q * a0 ** 2 * Gamma2 / np.abs(z) / 2
+            AA[i] = -Q * a0 ** 2 / np.abs(z) / 2
             i += 1
-        legend = ["AG", "AA"]
-        fft_utils.plot_n_Array("Amplification factor for a long bay", "$(K_1*L_1)$", "water level (m)", [kl, kl], [AG, AA], legend, plottitle = "title", fontsize = 20)
-
+        legend = ["A Gamma", "A no SW reflection"]
+        ax = fft_utils.plot_n_Array("Amplification factor for a long bay", "$(K_1*L_1)$", "water level (m)", [kl, kl], [AG, AA], \
+                                     legend, plottitle = "title", fontsize = 20, noshow = True)
+        ax.plot(L1 * Kf, A, 'bd')
+        plt.show()
 
 
         # plot |A|/ka0 vs Kf*W1
@@ -275,13 +282,13 @@ if __name__ == '__main__':
     # input values
     # 0 the embayment
     L = 1000  # basin length (m)
-    B = 100  # Basin Width
+    B = 140  # Basin Width
     h = 1.5  # average depth of the basin
     bay = BayGeometry(L, B, h)
 
     # 1) wind waves parameters
-    a0 = 0.02  # max amplitude
-    T = 35  # sec
+    a0 = 0.1  # max amplitude
+    T = 5  # sec
     freq = 1. / T
 
     # 2)  time one hour with 5 sec step
@@ -291,11 +298,11 @@ if __name__ == '__main__':
     x = np.linspace(0, -L, 1400)
 
     embNon = EmbaymentNonlinear(bay)
-    # embNon.calculateResponse(t, a0, freq, x)
+    embNon.calculateResponse(t, a0, freq, x)
 
     # 4)  omega 0 to 15, 2000 steps
     om = np.linspace(0.00001, 0.1, 200)
-    # embNon.calculateResponseVsFrequency(a0, om,True)
+    embNon.calculateResponseVsFrequency(a0, om, True)
     embNon.calculateResponseVsAngularFreqSlow(a0, om, True)
 
 

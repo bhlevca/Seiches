@@ -67,6 +67,26 @@ class EmbaymentPlot(object):
         return ampl
         # end amplitudef
 
+    def calculateResponseVsAngularFreqSlow(self, a0, om, False):
+        O = self.B * self.H
+        # head loss coeff. includes flow separation and bottom friction
+        fm = self.L * (f / self.L + self.Cd / self.H)
+
+        # linearized loss term coefficient
+        n0 = 8 * fm * self.A / (3 * np.pi * O * self.L)
+
+        # eigenfrequency
+        w0 = np.sqrt(g * O / self.L / self.A);
+
+
+        A = np.zeros(len(om))
+        i = 0
+        for w in om:
+            A[i] = self.amplitudef(a0, w, w0, n0)
+            i += 1
+
+        return A
+
     def max_amplification (self, amplitude_e, n0):
         '''
         This is eq (4) from Terra et al. (2005), the bay (resulting) max amplitude

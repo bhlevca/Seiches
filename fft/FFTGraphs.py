@@ -30,7 +30,7 @@ def plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq,
     # end if
 
     if y_label == None:
-        ylabel = '|Z(t)| [m]'
+        ylabel = '|Z(t)| (m)'
     else :
         ylabel = y_label
 
@@ -219,7 +219,7 @@ class FFTGraphs(object):
             # end if
 
             if y_label == None:
-                ylabel = '|Z(t)| [m]'
+                ylabel = '|Z(t)| (m)'
             else :
                 ylabel = y_label
 
@@ -423,7 +423,7 @@ class FFTGraphs(object):
                 title = title + " - Single-Sided Amplitude"
             xlabel = 'Time (h)'
             if y_label == None:
-                ylabel = '|Z(t)| [m]'
+                ylabel = '|Z(t)| (m)'
             else :
                 ylabel = y_label
             if self.filename1 != None:
@@ -452,7 +452,7 @@ class FFTGraphs(object):
             # Plot single - sided amplitude spectrum.
             title = 'Zoomed Single-Sided Amplitude spectrum vs freq'
             xlabel = 'Frequency (Hz)'
-            ylabel = '|Z(t)| [m]'
+            ylabel = '|Z(t)| (m)'
             if self.filename1 != None:
                 xa = np.array([self.f[100:-1], self.f[100:-1]])
                 ya = np.array([sSeries, sSeries1])
@@ -475,7 +475,7 @@ class FFTGraphs(object):
             # Plot single - sided amplitude spectrum.
             title = 'Zoomed Single-Sided Amplitude spectrum vs time [h]'
             xlabel = 'Time (h)'
-            ylabel = '|Z(t)| [m]'
+            ylabel = '|Z(t)| (m)'
             if self.filename1 != None:
                 tph = (1 / self.f[100:-1]) / 3600
                 tph1 = (1 / self.f1[100:-1]) / 3600

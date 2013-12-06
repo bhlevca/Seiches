@@ -221,7 +221,7 @@ def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plott
     # end
 
 def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None, log = False, \
-                 plottitle = False, grid = False, fontsize = 18):
+                 plottitle = False, grid = False, fontsize = 18, noshow = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
@@ -252,7 +252,9 @@ def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth =
     # axes up to make room fornumpy smoothing filter them
     if ymax_lim != None:
         plt.ylim(ymax = ymax_lim)
-    plt.show()
+    if not noshow:
+        plt.show()
+    return ax
 # end
 
 def errorbar(ax, x0, y0, ci, color):
@@ -268,15 +270,15 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     ax = fig.add_subplot(111)
 
     i = 0
-    lst = ['-', '--', '-.', ':.', '-', '--', ':', '-.']
-    colors = ['b', 'y', 'm', 'r', 'c', 'g', 'k', 'aqua']
+    lst = ['-', '--', '-.', ':', '-', '--', ':', '-.']
+    colors = ['b', 'y', 'r', 'g', 'c', 'm', 'k', 'aqua']
     for a in x_arr:
         x = x_arr[i][3:]
         y = y_arr[i][3:]
-        if len(x_arr) < 4:
-            lwt = 3.8 - i / 2.
+        if len(x_arr) < 5:
+            lwt = 3.5
         else:
-            lwt = 1.5 + i * 0.6
+            lwt = 1 + i * 0.6
 
         if log:
             ax.loglog(x, y, linestyle = lst[i], linewidth = lwt, basex = 10, color = colors[i])
