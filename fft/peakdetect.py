@@ -100,6 +100,7 @@ def peakdetect(y_axis, x_axis = None, lookahead = 300, delta = 0):
     """
     max_peaks = []
     min_peaks = []
+
     dump = []  # Used to pop the first hit which almost always is false
 
     # check input data

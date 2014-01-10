@@ -21,6 +21,7 @@ path1 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Da
 path2 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Data-long/LOntario'
 path3 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Toronto_Harbour'
 path4 = '/home/bogdan/Documents/UofT/PhD/Data_Files/Toberymory_tides'
+path5 = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Station-13320-Apr-09-2013/csv_processed'
 
 
 embayments = {
@@ -41,7 +42,7 @@ embayments = {
                        'Period':[16.8 / 60, 15.8 / 60, 12.0 / 60, 8.0 / 60] ,  # h
                        'Amplitude':[0.02, 0.02, 0.018, 0.016],  # m
                        'Amplitude_bay':[0.09, 0.11, 0.043, 0.058],  # m
-                       'Phase':[0, 0, 0, 0],  # rad
+                       'Phase':[0, 0, 0, 0],  # rad13320-07-APR-2013_slev.csv
                        'CD':0.0032,
                        'filename':path4 + '/LL1.csv'},
               'Tob-CIH' : {'A':64000., 'B':56. , 'H':1.9, 'L':175., 'LL':490, 'h':1.5, 'BB':50,
@@ -57,6 +58,13 @@ embayments = {
                        'Phase':[0, 0],  # rad
                        'CD':0.0032,
                        'filename':None},
+              'Tor_Harb' : {'A':None, 'B':None , 'H':None, 'L':None, 'LL':None, 'h':None, 'BB':None,
+                       'Period':[16.8 / 60, 12.0 / 60, 9.2 / 60] ,  # h
+                       'Amplitude':[0.02, 0.018, 0.014],  # m
+                       'Amplitude_bay':[0.025, 0.078, 0.037],  # m
+                       'Phase':[0, 0, 0],  # rad
+                       'CD':0.0032,
+                       'filename':path5 + '/13320-07-APR-2013_slev.csv'},
 
               }
 
@@ -101,13 +109,17 @@ class Embayment(object):
 
     @staticmethod
     def plotMultipleTimeseries(path_in, filenames, names, detrend = False, filtered = False, lowcut = None, highcut = None, \
-                                tunits = 'sec', printtitle = False, minmax = None, grid = False):
+                                tunits = 'sec', printtitle = False, minmax = None, grid = False, show = False, doy = True):
         # plot the original Lake oscillation input
         ts = []
         i = 0
         time = []
         for filename in filenames:
             [Time, SensorDepth] = fft_utils.readFile(path_in, filename)
+            # import matplotlib.pyplot as plt
+            # plt.plot(Time, SensorDepth)
+            # plt.show()
+
             # must detrend from subtracting the median so all have a zero median
             if filtered:
                 # filtered timeseries
@@ -126,14 +138,20 @@ class Embayment(object):
                 SensorDepth = y
             # end if filtered
 
-            ts.append(sp.signal.detrend(SensorDepth))
+            if detrend:
+                ts.append(sp.signal.detrend(SensorDepth))
+            else:
+                ts.append(SensorDepth)
             time.append(Time)
             i += 1
         series = np.array(ts)
 
 
         L = len(Time)
-        xlabel = 'Julian Day'
+        if doy:
+            xlabel = 'Julian Day'
+        else:
+            xlabel = 'Time (days)'
         ylabel = 'Detrended Z (m)'
         xa = np.array(time)
 
@@ -151,9 +169,9 @@ class Embayment(object):
 
         legend = names
         # end
-        fft_utils.plot_n_TimeSeries("Detrended Lake and Bay Levels", xlabel, ylabel, xa, \
-                                    series, legend, plottitle = Embayment.printtitle, fontsize = 20, doy = True, minmax = minmax, grid = grid)
 
+        fft_utils.plot_n_TimeSeries("Detrended Lake and Bay Levels", xlabel, ylabel, xa, \
+                                    series, legend, plottitle = Embayment.printtitle, fontsize = 20, doy = doy, minmax = minmax, grid = grid, show = show)
 
 
     # end plotLakeLevels
@@ -173,18 +191,18 @@ class Embayment(object):
              f(lake_name, bay_name, funits, y_label, title, log, fontsize, tunits, plottitle, grid, ymax, graph = False)
 
         # add the theory curves
+        if LL != None:
+            embg = EmbaymentNonlinear.BayGeometry(LL, B, h)
+            embNon = EmbaymentNonlinear.EmbaymentNonlinear(embg)
+            # convert cph to rad/sec
+            om = 2 * np.pi * xa[0] / 3600
+            amp = embNon.calculateResponseVsAngularFreqSlow(a0, om, False)
+            # amp = embNon.calculateResponseVsFrequency(a0, om, False)
+            xa = np.append(xa, [xa[0]], axis = 0)
+            ya = np.append(ya, [amp], axis = 0)
+            ld = legend.append('Nonlinear Analytical solution')
 
-        embg = EmbaymentNonlinear.BayGeometry(LL, B, h)
-        embNon = EmbaymentNonlinear.EmbaymentNonlinear(embg)
-        # convert cph to rad/sec
-        om = 2 * np.pi * xa[0] / 3600
-        amp = embNon.calculateResponseVsAngularFreqSlow(a0, om, False)
-        # amp = embNon.calculateResponseVsFrequency(a0, om, False)
-        xa = np.append(xa, [xa[0]], axis = 0)
-        ya = np.append(ya, [amp], axis = 0)
-        ld = legend.append('Nonlinear Analytical solution')
-
-        if bay != None:
+        if bay != None and LL != None:
             bay = Embayment(bay)
             embPlot = EmbaymentPlot.EmbaymentPlot(bay)
             amp_helm = embPlot.calculateResponseVsAngularFreqSlow(0.015, om, False)
@@ -202,7 +220,7 @@ class Embayment(object):
 
     @staticmethod
     def SpectralAnalysis(bay, b_wavelets = False, window = "hanning", num_segments = None, tunits = 'day', funits = "Hz", \
-                          filter = None, log = False, doy = False, grid = False):
+                          filter = None, log = False, doy = False, grid = False, fname = None):
 
         # show extended calculation of spectrum analysis
         show = True
@@ -239,7 +257,7 @@ class Embayment(object):
             bay_name = "Inner Boat Passage"
         # Fathom Five National Park Cove Island Harbour
         elif bay == 'Tob-CIH':
-            # NOTE:lake amplit is lower so switch places
+            # NOTE:lake amplit is13320-07-APR-2013_slev.csv lower so switch places
             # fftsa = FFTGraphs.FFTGraphs(path4, 'LL3.csv', 'LL4.csv', show, tunits)
             fftsa = FFTGraphs.FFTGraphs(path4, 'LL3-28jul2010.csv', 'LL4-28jul2010.csv', show, tunits)
             lake_name = "Harbour Island - lake"  # LL3.csv is actually the lake
@@ -255,7 +273,6 @@ class Embayment(object):
             fftsa = FFTGraphs.FFTGraphs(path3, '1115865-Station16-Gate-date.csv', '1115861-Station14-EmbaymentA-date.csv', show, tunits)
             lake_name = "Lake Ontario"
             bay_name = " Emabayment A"
-
         elif bay == 'Tob_All':
             fftsa1 = FFTGraphs.FFTGraphs(path4, 'LL4-28jul2010.csv', None, show, tunits)
             bay_names.append("Cove Island Harbour")
@@ -265,6 +282,10 @@ class Embayment(object):
             bay_names.append("Outer Boat Passage")
             fftsa4 = FFTGraphs.FFTGraphs(path4, 'LL3-28jul2010.csv', None, show , tunits)
             bay_names.append("Harbour Island - lake")
+        elif bay == 'Tor_Harb':
+            fftsa = FFTGraphs.FFTGraphs(path5, fname, fname, show, tunits)
+            lake_name = "Tor_Harb"
+            bay_name = ""
         else:
             print "Unknown embayment"
             exit(1)
@@ -529,86 +550,134 @@ class Embayment(object):
     def CalculateSpectral(bay):
         showLevels = False
         detrend = False
-        # detrend = True
+        detrend = True
 
-        filenames = ['LL1.csv', 'LL4.csv', 'LL2.csv', 'LL3.csv']
-        # filenames = ['LL3.csv', '11690-01-JUL-2010_out.csv']
-        # filenames = ['LL1-28jul2010.csv', 'LL4-28jul2010.csv', 'LL2-28jul2010.csv', 'LL3-28jul2010.csv']
-        # filenames = ['Lake_Ontario_1115682_processed.csv', 'Inner_Harbour_July_processed.csv']
-
-        names = [ "Inner Boat Passage" , "Cove Island Harbour", "Outer Boat Passage", "Lake Huron"]
-        # names = ["Harbour Island - lake", "Station 11960"]
-        # names = [ "Lake Ontario", "Frenchman's Bay"]
-
-        # set to True for Butterworth filtering - just for testing.
-        doFiltering = False
-        lowcutoff = 1.157407e-5
-        highcutoff = 0.00834
-        tunits = 'day'  # can be 'sec', 'hour'
-        funits = "cph"
-        minmax = [-0.4, 0.4]
-        Embayment.plotMultipleTimeseries(path4, filenames, names, detrend, doFiltering , lowcutoff, highcutoff, tunits, minmax = minmax)
-
-
-        doSpectral = True
-        dowavelets = False  # Scipy
-        doWavelet = False  # Terrence & Compo
-        doHarmonic = True
-        doFiltering = False
-        tunits = 'day'  # can be 'sec', 'hour'
-        window = 'hanning'
-        num_segments = 4
-
-        btype = 'band'
-        if btype == 'low':  # pass freq < lowcutoff
-            highcutoff = None
-            lowcutoff = 0.00834 * 2  # Hz => 30 cph, or T=2 min
-        elif btype == 'high':  # pass freq > highcutoff
-            highcutoff = 1.157407e-5  # Hz => 0.0417 cph, or T=24 h
-            lowcutoff = None
-        elif btype == 'band':  # pass highcutoff > freq > lowcutoff
+        if bay == 'Tor_Harb':
+            filenames = ['13320-01-MAY-2013_slev.csv']
+            filenames = ['13320-07-APR-2013_slev.csv']
+            names = [ "Toronto Harbour"]
+             # set to True for Butterworth filtering - just for testing.
+            doFiltering = False
             lowcutoff = 1.157407e-5  # Hz => 0.0417 cph, or T=24 h
             highcutoff = 0.00834  # Hz => 30 cph, or T=2 min
+            tunits = 'day'  # can be 'sec', 'hour'
+            funits = "cph"
+            minmax = None  # [-0.4, 0.4]
+            Embayment.plotMultipleTimeseries(path5, filenames, names, detrend, doFiltering , lowcutoff, highcutoff, tunits,
+                                             minmax = minmax, show = True, grid = True, doy = False)
+            doSpectral = True
+            dowavelets = False  # Scipy
+            doWavelet = False  # Terrence & Compo
+            doHarmonic = True
+            doFiltering = False
+            tunits = 'day'  # can be 'sec', 'hour'
+            window = 'hanning'
+            num_segments = 4
+
+            btype = 'band'
+            if btype == 'low':  # pass freq < lowcutoff
+                highcutoff = None
+                lowcutoff = 0.00834 * 2  # Hz => 30 cph, or T=2 min
+            elif btype == 'high':  # pass freq > highcutoff
+                highcutoff = 1.157407e-5  # Hz => 0.0417 cph, or T=24 h
+                lowcutoff = None
+            elif btype == 'band':  # pass highcutoff > freq > lowcutoff
+                lowcutoff = 1.157407e-5  # Hz => 0.0417 cph, or T=24 h
+                highcutoff = 0.00834  # Hz => 30 cph, or T=2 min
 
 
-        ftype = 'fft'
-        # ftype = 'butter' THIS DOES NOT WORK PROPERLY for the random signal we have here
-        if doFiltering:
-            filter = [lowcutoff, highcutoff]  # Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
+            ftype = 'fft'
+            # ftype = 'butter' THIS DOES NOT WORK PROPERLY for the random signal we have here
+            if doFiltering:
+                filter = [lowcutoff, highcutoff]  # Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
+            else:
+                filter = None
+
+            log = False
+            doy = True  # display time in day of the year instead of a timestamp
+            if doSpectral:
+                Embayment.SpectralAnalysis(bay, dowavelets, window, num_segments, tunits, funits, filter, log, doy, fname = filenames[0])
+
+
         else:
-            filter = None
+            filenames = ['LL1.csv', 'LL4.csv', 'LL2.csv', 'LL3.csv']
+            # filenames = ['LL3.csv', '11690-01-JUL-2010_out.csv']
+            # filenames = ['LL1-28jul2010.csv', 'LL4-28jul2010.csv', 'LL2-28jul2010.csv', 'LL3-28jul2010.csv']
+            # filenames = ['Lake_Ontario_1115682_processed.csv', 'Inner_Harbour_July_processed.csv']
 
-        log = False
-        doy = True  # display time in day of the year instead of a timestamp
-        if doSpectral:
-            Embayment.SpectralAnalysis(bay, dowavelets, window, num_segments, tunits, funits, filter, log, doy)
+            names = [ "Inner Boat Passage" , "Cove Island Harbour", "Outer Boat Passage", "Lake Huron"]
+            # names = ["Harbour Island - lake", "Station 11960"]
+            # names = [ "Lake Ontario", "Frenchman's Bay"]
 
-        tunits = 'day'
-        slevel = 0.95
-        # range 0-65000 is good to catch the high frequencies
-        #       0-600000 if you need to catch internal waves with much lower frequencies and large periods
-        val1, val2 = (0, 65000)  # Range of sc_type (ex periods) to plot in spectogram
-        avg1, avg2 = (0, 65000)  # Range of sc_type (ex periods) to plot in spectogram
+            # set to True for Butterworth filtering - just for testing.
+            doFiltering = False
+            lowcutoff = 1.157407e-5
+            highcutoff = 0.00834
+            tunits = 'day'  # can be 'sec', 'hour'
+            funits = "cph"
+            minmax = [-0.4, 0.4]
+            Embayment.plotMultipleTimeseries(path4, filenames, names, detrend, doFiltering , lowcutoff, highcutoff, tunits, minmax = minmax)
 
-        title = bay + ""
-        if doWavelet :
-            debug = False
-            Embayment.waveletAnalysis(bay, title, tunits, slevel, avg1, avg2, val1, val2, debug = debug)
+            doSpectral = True
+            dowavelets = False  # Scipy
+            doWavelet = False  # Terrence & Compo
+            doHarmonic = True
+            doFiltering = False
+            tunits = 'day'  # can be 'sec', 'hour'
+            window = 'hanning'
+            num_segments = 2  # 4 #10
 
-        if doHarmonic:
-            if bay == "":
-                freq_hours = 4.5
-                Embayment.HarmonicAnalysis('Lake_Ontario_1115682_processed.csv', path, freq_hours)
-                Embayment.HarmonicAnalysis('LO_Burlington-Mar23-Apr23-2011.csv', path, freq_hours)
-                Embayment.HarmonicAnalysis('LO_Burlington-JAN-DEC-2011_date.csv', path, freq_hours)
-                Embayment.HarmonicAnalysis('LO_Burlington-Apr26-Apr28-2011.csv', path, freq_hours)
-            if bay == "Tob-IBP":
-                freq_hours = 0.266688
-                Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
-                freq_hours = 0.120010
-                Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
-                freq_hours = 0.07742
-                Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
+            btype = 'band'
+            if btype == 'low':  # pass freq < lowcutoff
+                highcutoff = None
+                lowcutoff = 0.00834 * 2  # Hz => 30 cph, or T=2 min
+            elif btype == 'high':  # pass freq > highcutoff
+                highcutoff = 1.157407e-5  # Hz => 0.0417 cph, or T=24 h
+                lowcutoff = None
+            elif btype == 'band':  # pass highcutoff > freq > lowcutoff
+                lowcutoff = 1.157407e-5  # Hz => 0.0417 cph, or T=24 h
+                highcutoff = 0.00834  # Hz => 30 cph, or T=2 min
+
+
+            ftype = 'fft'
+            # ftype = 'butter' THIS DOES NOT WORK PROPERLY for the random signal we have here
+            if doFiltering:
+                filter = [lowcutoff, highcutoff]  # Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
+            else:
+                filter = None
+
+            log = False
+            doy = True  # display time in day of the year instead of a timestamp
+            if doSpectral:
+                Embayment.SpectralAnalysis(bay, dowavelets, window, num_segments, tunits, funits, filter, log, doy)
+
+            tunits = 'day'
+            slevel = 0.95
+            # range 0-65000 is good to catch the high frequencies
+            #       0-600000 if you need to catch internal waves with much lower frequencies and large periods
+            val1, val2 = (0, 65000)  # Range of sc_type (ex periods) to plot in spectogram
+            avg1, avg2 = (0, 65000)  # Range of sc_type (ex periods) to plot in spectogram
+
+            title = bay + ""
+            if doWavelet :
+                debug = False
+                Embayment.waveletAnalysis(bay, title, tunits, slevel, avg1, avg2, val1, val2, debug = debug)
+
+            if doHarmonic:
+                if bay == "":
+                    freq_hours = 4.5
+                    Embayment.HarmonicAnalysis('Lake_Ontario_1115682_processed.csv', path, freq_hours)
+                    Embayment.HarmonicAnalysis('LO_Burlington-Mar23-Apr23-2011.csv', path, freq_hours)
+                    Embayment.HarmonicAnalysis('LO_Burlington-JAN-DEC-2011_date.csv', path, freq_hours)
+                    Embayment.HarmonicAnalysis('LO_Burlington-Apr26-Apr28-2011.csv', path, freq_hours)
+                if bay == "Tob-IBP":
+                    freq_hours = 0.266688
+                    Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
+                    freq_hours = 0.120010
+                    Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
+                    freq_hours = 0.07742
+                    Embayment.HarmonicAnalysis('LL1-28jul2010.csv', path4, freq_hours)
+        # end if 'Tor_Harb'
     # end CalculateSpectral
 
 # end Embayment
@@ -624,6 +693,7 @@ if __name__ == '__main__':
     # bay = 'Tob_All'
     # bay = 'Tob-HI'
     # bay = 'L-SUP'
+    bay = 'Tor_Harb'
     days = 10
 
     usage = "usage: %prog [options] arg"

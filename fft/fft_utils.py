@@ -338,7 +338,8 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
 # end
 
 
-def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plottitle = False, doy = False, grid = False):
+def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plottitle = False, \
+                    doy = False, grid = False):
 
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
     ax = fig.add_subplot(111)
@@ -373,7 +374,7 @@ def plotTimeSeries(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, 
 # end
 
 def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.8, plottitle = False, fontsize = 18, \
-                       doy = False, minmax = None, grid = False):
+                       doy = False, minmax = None, grid = False, show = True):
 
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
@@ -416,7 +417,8 @@ def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewi
     plt.yticks(fontsize = fontsize - 4)
     if minmax != None:
         plt.ylim(ymin = minmax[0], ymax = minmax[1])
-    plt.show()
+    if show:
+        plt.show()
 # end
 
 def flattop(N):
