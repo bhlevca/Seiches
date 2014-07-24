@@ -54,7 +54,7 @@ class FFTSpectralAnalysis(object):
 
 
     def FourierAnalysis(self, filename, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, \
-                        log = False, bResample = False, Time1 = None):
+                        log = False, bResample = False, Time1 = None, date1st = False):
 
         '''
         FFT for Spectral Analysis
@@ -68,7 +68,7 @@ class FFTSpectralAnalysis(object):
         '''
 
         # read Lake data
-        [Time, SensorDepth] = fft_utils.readFile(self.path_in, filename)
+        [Time, SensorDepth] = fft_utils.readFile(self.path_in, filename, date1st)
         Time = np.array(Time)
         SensorDepth = np.array(SensorDepth)
         if bResample:
@@ -142,30 +142,28 @@ class FFTSpectralAnalysis(object):
 
     # end
 
-#===============================================================================
-#     def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, log = False):
-#
-#         Time, SensorDepth = data
-#         x05 = None
-#         x95 = None
-#
-#         if Time[1] < 695056:
-#             Time += 695056
-#
-#         if num_segments == 1:
-#             [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)
-#         else:
-#             [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
-#             fftx = avg_fftx
-#             mx = avg_amplit
-#             power = avg_power
-#             y = sp.signal.detrend(SensorDepth)
-#             NFFT = len(Time)
-#             NumUniquePts = int(math.ceil((NFFT / 2) + 1))
-#         # end if
-#
-#         return [y, Time, fftx, NumUniquePts, mx, f, power, x05, x95]
-#===============================================================================
+    def FourierDataAnalysis(self, data, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, log = False, date1st = False):
+
+        Time, SensorDepth = data
+        x05 = None
+        x95 = None
+
+        if Time[1] < 695056:
+            Time += 695056
+
+        if num_segments == 1:
+            [y, Time, fftx, NumUniquePts, mx, f, power] = self.fourierTSAnalysis(Time, SensorDepth, draw, tunits)
+        else:
+            [f, avg_fftx, avg_amplit, avg_power, x05, x95] = self.WelchFourierAnalysis_overlap50pct(Time, SensorDepth, draw, tunits, window, num_segments, log)
+            fftx = avg_fftx
+            mx = avg_amplit
+            power = avg_power
+            y = sp.signal.detrend(SensorDepth)
+            NFFT = len(Time)
+            NumUniquePts = int(math.ceil((NFFT / 2) + 1))
+        # end if
+
+        return [y, Time, fftx, NumUniquePts, mx, f, power, x05, x95]
 
 
     def fourierTSAnalysis(self, Time, SensorDepth, draw = 'True', tunits = 'sec', log = False):

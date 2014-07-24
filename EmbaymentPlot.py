@@ -850,7 +850,8 @@ class EmbaymentPlot(object):
         plt.ylabel(ylabel, fontsize = 22)
         plt.grid(grid, which = 'major', axis = 'y')
         plt.legend(legend)
-
+        plt.xticks(fontsize = 20)
+        plt.yticks(fontsize = 20)
 
         # dimesionless values
         pmax = 0

@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import matplotlib.pylab as pylab
 import matplotlib.cm as cm
+from matplotlib import colors
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import FuncFormatter
 
@@ -56,17 +57,8 @@ class kCwt(object):
     '''
 
 
-    def __init__(self, path = None, file = None, tunits = "day", time = None, var = None):
-        '''
-        Constructor
+    def __init__(self, *args, **kwargs):
 
-        @param path: path to the data file
-        @param file: file name of the data file
-        @param tunits:"day", "hour", "sec" the unit of the time interval in the timeseries
-        @param time: the time array, used for passing data directly, when not reading from a file
-        @param var: the timeseries data, used for passing data directly, when not reading from a file
-
-        '''
         # Data members
         self.mother = None
         self.dj = 0.25  # Four sub-octaves per octaves
@@ -86,27 +78,67 @@ class kCwt(object):
         self.amplitude = None
         self.phase = None
         self.eps = None
-        self.SensorDepth = None  # original time seriets
+        self.dataU = None  # original time seriets
         self.signal = None  # detrended timeseries
         self.glbl_power = None
         self.glbl_signif = None
         self.units = None
+        self.dataV = None
+        self.dataW = None
+        self.fft = None
+        self.scales = None
+        self.rotary = False
+        self.wave = None
 
+        if len(args) == 3:
+            self.initFromFile(args[0], args[1], args[2])
+        elif len (args) == 4:
+            self.initFromData(args[0], args[1], args[2], args[3])
+        else:
+            self.initFromDataRotary(args[0], args[1], args[2], args[3], args[4])
+            self.rotary = True
 
+    def initFromData(self, Time, data, tunits = "day", readfile = False):
+        self.Time = np.array(Time)
+        self.eps = (self.Time[1] - self.Time[0]) / 100
+        self.dataU = np.array(data)
+        if self.Time[0] < 695056:
+            self.Time += 695056
 
-        if path != None and file != None:
-            self.filename = file
-            # read Lake data
-            [self.Time, self.SensorDepth] = fft_utils.readFile(path, file)
-            self.eps = (self.Time[1] - self.Time[0]) / 100
-            self.SensorDepth = np.array(self.SensorDepth)
-            self.Time = np.array(self.Time)
-            if self.Time[0] < 695056:
-                self.Time += 695056
+        if tunits == 'day':
+            self.tfactor = 86400
+        elif tunits == 'hour':
+            self.tfactor = 3600
+        elif tunits == 'sec':
+            self.tfactor = 1
+        else:
+            print "Wrong time units!"
+            raise Exception('Error', 'Wrong time units!')
+        # change to seconds after calculating tfactor
+        self.tunits = 'sec'
 
-        if var != None and time != None :
-            self.SensorDepth = np.array(var)
-            self.Time = np.array(time)
+    def initFromDataRotary(self, Time, data, data2, tunits = "day", readfile = False):
+        self.dataV = np.array(data2)
+        self.initFromData(Time, data, tunits, readfile)
+
+    def initFromFile(self, path, file, tunits = "day"):
+
+        '''
+        @param path: path to the data file
+        @param file: file name of the data file
+        @param tunits:"day", "hour", "sec" the unit of the time interval in the timeseries
+        @param time: the time array, used for passing data directly, when not reading from a file
+        @param var: the timeseries data, used for passing data directly, when not reading from a file
+
+        '''
+        self.filename = file
+        # read Lake data
+        [self.Time, self.dataU] = fft_utils.readFile(path, file)
+        self.eps = (self.Time[1] - self.Time[0]) / 100
+        self.dataU = np.array(self.dataU)
+        self.Time = np.array(self.Time)
+        if self.Time[0] < 695056:
+            self.Time += 695056
 
         if tunits == 'day':
             self.tfactor = 86400
@@ -122,7 +154,7 @@ class kCwt(object):
 
 
     def doSpectralAnalysis(self, title, motherW = 'morlet', slevel = None, avg1 = None, avg2 = None, \
-                           dj = None, s0 = None, J = None, alpha = None) :
+                           dj = None, s0 = None, J = None, alpha = None, counterclock = True) :
         '''
         Calls the required function in sequence to perform a wavelet and Fourier Analysis
 
@@ -156,8 +188,8 @@ class kCwt(object):
             self.mother = wavelet.DOG()
         elif motherW == 'morlet':
             self.mother = wavelet.Morlet(6.)
-        # [self.Time, SensorDepth1, X1, scales1, freq1, corr1 ]
-        a = self._doSpectralAnalysisOnSeries()
+        # [self.Time, dataU1, X1, scales1, freq1, corr1 ]
+        a = self._doSpectralAnalysisOnSeries(counterclock)
         if slevel != None:
             self.get95Significance(slevel)
             self.getGlobalSpectrum(slevel)
@@ -170,9 +202,53 @@ class kCwt(object):
 
         return a
 
-    def _doSpectralAnalysisOnSeries(self):
-        ''' private workhorse
+    def rotary_spectra_transforms(self, u, v):
+        # autospectra of the scalar components
+        pu = u * u.conj()
+        pv = v * v.conj()
+
+        # cross spectra
+        puv = u.real * v.real + u.imag * v.imag
+
+        # quadrature spectra
+        quv = -u.real * v.imag + v.real * u.imag
+
+        # rotatory components
+        cw = (pu + pv - 2 * quv) / 8
+        ccw = (pu + pv + 2 * quv) / 8
+        return [puv, quv, cw, ccw]
+
+    def rotary_spectra(self, uTrans, vTrans):
         '''
+        Trans has the components:
+               wave, scales, freq, coi, fft, fftfreqs, iwave, power, fft_power, amplitude, phase
+        '''
+        [waveU, scalesU, freqU, coiU, fftU, fftfreqsU, iwaveU, powerU, fft_powerU, amplitudeU, phaseU, stdU] = uTrans
+        [waveV, scalesV, freqV, coiV, fftV, fftfreqsV, iwaveV, powerV, fft_powerV, amplitudeV, phaseV, stdV] = vTrans
+
+        # FFT
+        fftdata = [fpuv, fquv, fcw, fccw] = self.rotary_spectra_transforms(fftU, fftV)
+        fftpowerdata = [pfpuv, pfquv, pfcw, pfccw] = self.rotary_spectra_transforms(fft_powerU, fft_powerV)
+
+        # wavelet
+        wavedata = [wpuv, wquv, wcw, wccw] = self.rotary_spectra_transforms(waveU, waveV)
+        iwavedata = [iwpuv, iwquv, iwcw, iwccw] = self.rotary_spectra_transforms(iwaveU, iwaveV)
+        powerwavedata = [pwpuv, pwquv, pwcw, pwccw] = self.rotary_spectra_transforms(powerU, powerV)
+
+        amplitude = amplitudeU + amplitudeV * 1j
+        phase = phaseU + phaseV * 1j
+        self.dataW = self.dataU + 1j * self.dataV
+
+        std = stdU  # np.max(stdU, stdV)
+
+        coi = coiU  # the are the same if size of the vector is the same
+        freq = freqU  # same as above
+        scales = scalesU
+        fftfreqs = fftfreqsU
+
+        return [fftdata, fftpowerdata, wavedata, iwavedata, powerwavedata, amplitude, phase, std, coi, freq, scales, fftfreqs]
+
+    def Transform(self, data):
 
         if self.dj == None:
             self.dj = 0.25  # Four sub-octaves per octaves
@@ -187,37 +263,85 @@ class kCwt(object):
             self.alpha = 0.0  # Lag-1 autocorrelation for white noise
 
         # 'dt' is a time step in the time series
-        self.SensorDepth = mlab.detrend_linear(self.SensorDepth)
+        dataY = mlab.detrend_linear(data)
 
         self.dt = (self.Time[1] - self.Time[0]) * self.tfactor  # time is in days , convert to hours
-        self.std = np.std(self.SensorDepth)  # Standard deviation
-        self.variance = self.std ** 2  # Variance
+        std = np.std(data)  # Standard deviation
+        variance = std ** 2  # Variance
 
         # normalize by standard deviation (not necessary, but makes it easier
         # to compare with plot on Interactive Wavelet page, at
         # "http://paos.colorado.edu/research/wavelets/plot/"
-        self.signal = (self.SensorDepth - self.SensorDepth.mean()) / self.std  # Calculating anomaly and normalizing
+        signal = (data - data.mean()) / std  # Calculating anomaly and normalizing
 
         # The following routines perform the wavelet transform and siginificance
         # analysis for the chosen data set.
-        wave, self.scales, self.freq, self.coi, self.fft, self.fftfreqs = \
-            wavelet.cwt(self.signal, self.dt, self.dj, self.s0, self.J, self.mother)
+        wave, scales, freq, coi, fft, fftfreqs = wavelet.cwt(signal, self.dt, self.dj, self.s0, self.J, self.mother)
 
         # this should reconstruct the initial signal
-        self.iwave = wavelet.icwt(wave, self.scales, self.dt, self.dj, self.mother)
-        self.N = self.SensorDepth.shape[0]
+        iwave = wavelet.icwt(wave, scales, self.dt, self.dj, self.mother)
+        self.N = data.shape[0]
 
         # calculate power and amplitude spectrogram
-        self.power = (np.abs(wave)) ** 2  # Normalized wavelet power spectrum
-        self.fft_power = self.variance * np.abs(self.fft) ** 2  # FFT power spectrum
-        self.amplitude = self.std * np.abs(wave) / 2.  # we use only half of the symmetrical
+        power = (np.abs(wave)) ** 2  # Normalized wavelet power spectrum
+        fft_power = variance * np.abs(fft) ** 2  # FFT power spectrum
+        amplitude = std * np.abs(wave) / 2.  # we use only half of the symmetrical
                                                                  # spectrum therefore divide by 2
-        self.phase = np.angle(wave)
+        phase = np.angle(wave)
 
-        self.period = 1. / self.freq
+        period = 1. / freq
 
-        return [wave, self.scales, self.freq, self.coi, self.fft, self.fftfreqs,
+        return [wave, scales, freq, coi, fft, fftfreqs, iwave, power, fft_power, amplitude, phase, std]
+        # return [wave, self.scales, self.freq, self.coi, self.fft, self.fftfreqs,
+        #        self.iwave, self.power, self.fft_power, self.amplitude, self.phase]
+
+
+    def _doSpectralAnalysisOnSeries(self, counterclock = True):
+        ''' private workhorse
+        '''
+        # check if we have vector data (u and v components)
+        if self.dataV != None:
+            uTrans = self.Transform(self.dataU)
+            vTrans = self.Transform(self.dataV)
+            [fftdata, fftpowerdata, wavedata, iwavedata, powerwavedata, amplitude, phase, std, coi, freq, scales, fftfreqs] = \
+                self.rotary_spectra(uTrans, vTrans)
+            [wpuv, wquv, wcw, wccw] = wavedata
+            [iwpuv, iwquv, iwcw, iwccw] = iwavedata
+            [pwpuv, pwquv, pwcw, pwccw] = powerwavedata
+            [fpuv, fquv, fcw, fccw] = fftdata
+            [pfpuv, pfquv, pfcw, pfccw] = fftpowerdata
+            self.scales = scales
+            self.freq = freq
+            self.coi = coi
+            self.fftfreqs = fftfreqs
+            self.amplitude = amplitude
+            self.phase = phase
+            self.std = std
+            self.period = 1. / freq
+
+            if counterclock:
+                self.fft = fccw
+                self.fft_power = pfccw
+                self.iwave = iwccw
+                self.power = pwccw
+                self.wave = wccw
+            else:
+                self.fft = fcw
+                self.fft_power = pfcw
+                self.iwave = iwcw
+                self.power = pwcw
+                self.wave = wcw
+        else:
+            [self.wave, self.scales, self.freq, self.coi, self.fft, self.fftfreqs, self.iwave, self.power, \
+              self.fft_power, self.amplitude, self.phase, self.std] = self.Transform(self.dataU)
+            self.dataW = self.dataU
+            self.period = 1. / self.freq
+        # end if counter
+
+        self.variance = self.std ** 2  # Variance
+        return [self.wave, self.scales, self.freq, self.coi, self.fft, self.fftfreqs,
                 self.iwave, self.power, self.fft_power, self.amplitude, self.phase]
+    # end def _doSpectralAnalysisOnSeries
 
 
     def get95Significance(self, slevel):
@@ -358,7 +482,7 @@ class kCwt(object):
         plt.show()
 
 
-    def plotSpectrogram(self, ylabel_ts, units_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2, raw = False):
+    def plotSpectrogram(self, ylabel_ts, units_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2, raw = False, title = False, powerimg = True):
         '''
          The following routines plot the results in four different subplots containing:
          - the original series,
@@ -380,12 +504,12 @@ class kCwt(object):
           @return: None
 
         '''
-        fontsize = 16
+        fontsize = 14
         pylab.close('all')
         # fontsize = 'medium'
-        params = {'text.fontsize': fontsize,
-                  'xtick.labelsize': fontsize,
-                  'ytick.labelsize': fontsize,
+        params = {'text.fontsize': fontsize - 2,
+                  'xtick.labelsize': fontsize - 2,
+                  'ytick.labelsize': fontsize - 2,
                   'axes.titlesize': fontsize,
                   'axes.labelsize': fontsize,
                   'text.usetex': True
@@ -412,9 +536,11 @@ class kCwt(object):
             ax.plot(Time, self.iwave, '-', linewidth = 1, color = [0.5, 0.5, 0.5])
 
             # Plot the original signal
-            ax.plot(Time, self.SensorDepth, 'k', linewidth = 1.5)
+            ax.plot(Time, self.dataW, 'k', linewidth = 1.5)
 
-            ax.set_title('(a) %s' % (self.title,))
+            if title:
+                ax.set_title('(a) %s' % (self.title,))
+
             if self.units != '':
               ax.set_ylabel(r'%s [$%s$]' % (ylabel_ts, self.units,))
             else:
@@ -454,21 +580,34 @@ class kCwt(object):
         sel = pylab.find((y_scales >= val1) & (y_scales < val2))  # indices of selected data sales or freq
         y_scales = y_scales[sel[0]:sel[len(sel) - 1] + 1]
         power = self.power[sel[0]:sel[len(sel) - 1] + 1]
+        wave = self.wave[sel[0]:sel[len(sel) - 1] + 1]
         sig95 = self.sig95 [sel[0]:sel[len(sel) - 1] + 1]
         glbl_signif = self.glbl_signif[sel[0]:sel[len(sel) - 1] + 1]
         glbl_power = self.glbl_power[sel[0]:sel[len(sel) - 1] + 1]
 
-        levels = np.arange(power.min(), power.max() + power.min(), (power.max() - power.min()) / 32)
+        # levels = np.arange(power.min(), power.max() + power.min(), (power.max() - power.min()) / 32)
+        if self.rotary:
+            if powerimg:
+                lev_exp = np.arange(np.floor(np.log2(power.min()) - 1), np.ceil(np.log2(power.max()) + 1))
+                levels = np.power(2, lev_exp)
+                # im = bx.contourf(Time, np.log2(y_scales), np.log2(power), np.log2(levels), cmap = cm.jet, extend = 'both')
+                im = bx.contourf(Time, np.log2(y_scales), np.log2(power), cmap = cm.jet, extend = 'both')
+            else:
+                # lev_exp = np.arange(np.floor(np.log2(wave.min()) - 1), np.ceil(np.log2(wave.max()) + 1), (np.floor(np.log2(wave.min()) - 1) - np.ceil(np.log2(wave.max()) + 1)) / 25)
+                # levels = np.power(2, lev_exp)
 
-        # im = bx.contourf(Time, np.log2(y_scales), np.log2(power), np.log2(levels), cmap = cm.jet, extend = 'both')
-        im = bx.contourf(Time, np.log2(y_scales), np.log2(power), 32, cmap = cm.jet, extend = 'both')
+                im = bx.contourf(Time, np.log2(y_scales), np.log2(wave), 32, cmap = cm.jet, extend = 'both')
+        else:
+            im = bx.contourf(Time, np.log2(y_scales), np.log2(power), 32, cmap = cm.jet, extend = 'both')
+
 
         # For out of levels representation enable the following two lines.
         # However, the above lines need to define the required levels
         # im.cmap.set_under('yellow')
         # im.cmap.set_over('cyan')
 
-        bx.contour(Time, np.log2(y_scales), sig95, [-99, 1], colors = 'k', linewidths = 2.1)
+        if not self.rotary:
+            bx.contour(Time, np.log2(y_scales), sig95, [-99, 1], colors = 'k', linewidths = 2.1)
 
         bx.fill(np.concatenate([Time[:1] - self.dt, Time, Time[-1:] + self.dt, \
                                 Time[-1:] + self.dt, Time[:1] - self.dt, Time[:1] - self.dt]), \
@@ -478,21 +617,29 @@ class kCwt(object):
 
 
         # for testing only
-        # fig.colorbar(im) - if present it will shift the scales
-        if raw:
-            bx.set_title('(b) Wavelet Power Spectrum (%s)' % (self.mother.name))
-        else:
-            bx.set_title('(a) Wavelet Power Spectrum (%s) - %s' % (self.mother.name, self.title))
+        fig.colorbar(im)  # - if present it will shift the scales
+        if title:
+            if raw:
+                bx.set_title('(b) Wavelet Power Spectrum (%s)' % (self.mother.name))
+            else:
+                bx.set_title('(a) Wavelet Power Spectrum (%s) - %s' % (self.mother.name, self.title))
+        # end if
         bx.set_ylabel(ylabel_sc)
-        Yticks = np.arange(y_scales.min(), y_scales.max(), (y_scales.max() - y_scales.min()) / 16)
-
-
+        # Yticks = np.arange(y_scales.min(), y_scales.max(), (y_scales.max() - y_scales.min()) / 16)
         # formatter = FormatStrFormatter('%2.4f')
         # bx.yaxis.set_major_formatter(formatter)
-        Yticks = 2 ** np.arange(np.ceil(np.log2(y_scales.min())),
-                           np.ceil(np.log2(y_scales.max())))
+
+        Yticks = 2 ** np.arange(np.ceil(np.log2(y_scales.min())), np.ceil(np.log2(y_scales.max())))
         bx.set_yticks(np.log2(Yticks))
-        bx.set_yticklabels(Yticks)
+        if self.rotary:
+            tlab = ["%.2f" % (tk / 3600.) for tk in Yticks]
+            bx.set_yticklabels(tlab)  # print in hours
+            labels = bx.get_yticklabels()
+            for t in labels: print t
+            pylab.setp(labels, visible = True)
+
+        else:
+            bx.set_yticklabels(Yticks)
         # formatter = FuncFormatter(self.scinot)
         # bx.yaxis.set_major_formatter(formatter)
         bx.invert_yaxis()
@@ -521,12 +668,14 @@ class kCwt(object):
         # the line of chosen significance, ususaly 95%
         cx.plot(glbl_signif, np.log2(y_scales), 'k-.')
 
-        if raw:
-            cx.set_title('(c) Global Wavelet Spectrum')
-        else:
-            cx.set_title('(b) Global Wavelet Spectrum')
+        if title:
+            if raw:
+                cx.set_title('(c) Global Wavelet Spectrum')
+            else:
+                cx.set_title('(b) Global Wavelet Spectrum')
+
         if self.units != '':
-          cx.set_xlabel(r'Power [$%s^2$]' % (self.units,))
+          cx.set_xlabel(r'Power $[%s]^2$' % (self.units,))
         else:
           cx.set_xlabel(r'Power')
 
@@ -537,7 +686,10 @@ class kCwt(object):
 
         Xticks = np.arange(0, glbl_power.max() + glbl_power.max() / 4, glbl_power.max() / 3)
         cx.set_xticks(Xticks)
-        xlabels = ['%.3f' % i for i in Xticks]
+        if self.rotary:
+            xlabels = ['%.1f' % i for i in Xticks]
+        else:
+            xlabels = ['%.3f' % i for i in Xticks]
         cx.set_xticklabels(xlabels)
 
 
@@ -557,13 +709,16 @@ class kCwt(object):
 
         # plot the scale average for each time point.
         dx.plot(Time, self.scale_avg, 'k-', linewidth = 1.5)
-        if raw:
-            dx.set_title('(d) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
-        else:
-            dx.set_title('(c) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
+
+        if title:
+            if raw:
+                dx.set_title('(d) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
+            else:
+                dx.set_title('(c) Scale-averaged power  [$%.4f$-$%.4f$] (%s)' % (self.avg1, self.avg2, self.tunits))
+        # ENDIF TITLE
 
         if x_type == 'dayofyear' :
-            xlabel = 'Julian Day'
+            xlabel = 'Day of year'
         elif x_type == 'date':
             xlable = 'Time (days)'
         else:
@@ -621,7 +776,7 @@ if __name__ == '__main__':
     slevel = 0.95  # Significance level
     tunits = 'sec'
     # tunits = '^{\circ}C'
-    kwavelet = kCwt(None, None, tunits, time = t, var = x)
+    kwavelet = kCwt(t, x, tunits, False)
 
     dj = 0.025  # Four sub-octaves per octaves
     s0 = -1  # 2 * dt                      # Starting scale, here 6 months

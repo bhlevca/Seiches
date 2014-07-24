@@ -57,7 +57,7 @@ def drange(start, stop, step):
 # end drange
 
 
-def readFile(path_in, fname):
+def readFile(path_in, fname, date1st = False):
     # read Lake data
     filename = path_in + '/' + fname
 
@@ -66,11 +66,18 @@ def readFile(path_in, fname):
     rownum = 0
     SensorDepth = []
     Time = []
+    if  date1st:
+        ix1 = 2
+        ix2 = 1
+    else:
+        ix1 = 1
+        ix2 = 0
+
     printHeaderVal = False
     for row in reader:
         try:
-            SensorDepth.append(float(row[1]))
-            Time.append(float(row[0]))
+            SensorDepth.append(float(row[ix1]))
+            Time.append(float(row[ix2]))
         except:
             pass
     # end for
@@ -263,6 +270,12 @@ def errorbar(ax, x0, y0, ci, color):
     ax.loglog(x0, y0 * ci[0], 'b_')
     ax.loglog(x0, y0 * ci[1], 'b_')
 
+def errorbarsemilogx(ax, x0, y0, ci, color):
+    ax.semilogy([x0, x0], [y0 * ci[0], y0 * ci[1]], color = color)
+    ax.semilogyloglog(x0, y0, 'bo')
+    ax.semilogy(x0, y0 * ci[0], 'b_')
+    ax.semilogy(x0, y0 * ci[1], 'b_')
+
 def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend = None, linewidth = 0.8, ymax_lim = None, log = False, \
                          fontsize = 18, plottitle = False, grid = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
@@ -271,53 +284,83 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
 
     i = 0
     lst = ['-', '--', '-.', ':', '-', '--', ':', '-.']
-    colors = ['b', 'y', 'r', 'g', 'c', 'm', 'k', 'aqua']
+    lst = ['-', '-', '-', '-', '-', '-', '-', '-']
+    colors = ['b', 'c', 'r', 'k', 'y', 'm', 'aqua', 'k']
     for a in x_arr:
         x = x_arr[i][3:]
         y = y_arr[i][3:]
         if len(x_arr) < 5:
-            lwt = 3.5
+            lwt = 2.6 - i * 0.2
         else:
             lwt = 1 + i * 0.6
 
+
         if log:
             ax.loglog(x, y, linestyle = lst[i], linewidth = lwt, basex = 10, color = colors[i])
+            ax.set_yscale('log')
+            # ax.semilogx(x, y, linestyle = lst[i], linewidth = lwt, color = colors[i])
+
         else:
             ax.plot(x, y, linestyle = lst[i], linewidth = lwt, color = colors[i])
+
         i += 1
     # end for
 
     # plot the confidence intervals
-    i = 0
-    Ymin = 10000000
-    Ymax = 0
-    for a in ci05:  # x_arr:
-        if log:
-            x = a[1:]
-            y1 = ci05[0]
-            y2 = ci95[0]
-            ymx = max(y_arr[0][3:])
-            ymin = min(y_arr[0][3:])
-            y0 = ymx * 0.65
-            # Choose a locatioon for the CI bar
-            ax.set_yscale('log')
-            # yerr = (y2 - y1) / 2.0
-            # ax.errorbar(a[150], y0, xerr = None, yerr = yerr)
-            errorbar(ax, a[int((len(a) - 1))] * 1.2, y0, [y1, y2], color = 'b')
-            ax.annotate("95%", (a[int((len(a) - 1))] * 1.3, y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
-            Ymin = min(Ymin, ymin)
-            Ymax = max(Ymax, ymx)
-        else:
-            y1 = ci05[i][3:]
-            y2 = ci95[i][3:]
-            sd = 0.65 - i * 0.15
+    if len(ci05) > 0:
 
-            ax.plot(x, y1, x, y2, color = [sd, sd, sd], alpha = 0.0)
-            ax.fill_between(x, y1, y2, where = y2 > y1, facecolor = [sd, sd, sd], alpha = 1, interpolate = True, linewidth = 0.0)
-        i += 1
+        i = 0
+        Ymin = 10000000
+        Ymax = 0
+
+        xc = 0
+        for a in ci05:  # x_arr:
+            arry = hasattr(a, "__len__")
+            x = x_arr[i][3:]
+            y = y_arr[i][3:]
+            if log :
+                if xc == 0:
+                    if arry:
+                        xc = a[int((len(a) - 1))] * 1.2
+                    else:
+                        xc = np.max(x) * .1
+                else:
+                    xc = -1
+                y1 = ci05[0]
+                y2 = ci95[0]
+                ymx = max(y)
+                ymin = min(y)
+
+                y0 = ymx * 0.35
+                # Choose a locatioon for the CI bar
+
+                if xc != -1:
+                    if arry:
+                        errorbar(ax, xc * 1.2, y0, [y1, y2], color = colors[i])
+                        ax.annotate("95%", (xc * 1.3, y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
+                    else:
+                        errorbar(ax, xc, y0, [y1, y2], color = colors[i])
+                        ax.annotate("95%", (xc * 1.1, y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
+                # end if
+
+                Ymin = min(Ymin, ymin)
+                Ymax = max(Ymax, ymx)
+            else:
+                y1 = ci05[i][3:]
+                y2 = ci95[i][3:]
+                sd = 0.65 - i * 0.15
+
+                ax.plot(x, y1, x, y2, color = [sd, sd, sd], alpha = 0.0)
+                ax.fill_between(x, y1, y2, where = y2 > y1, facecolor = [sd, sd, sd], alpha = 1, interpolate = True, linewidth = 0.0)
+            i += 1
+    # end if len(ci)
 
     # ax.xaxis.grid(True, 'major')
+
     ax.xaxis.grid(grid, 'minor')
+    ax.yaxis.grid(grid, 'minor')
+    plt.setp(ax.get_xticklabels(), visible = True, fontsize = fontsize - 6)
+    plt.setp(ax.get_yticklabels(), visible = True, fontsize = fontsize - 6)
     ax.grid(grid)
     plt.ylabel(ylabel, fontsize = fontsize)
     plt.xlabel(xlabel, fontsize = fontsize)
@@ -381,7 +424,8 @@ def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewi
     ax = fig.add_subplot(111)
 
     i = 0;
-    ls = ['-b', '--y', ':m', '-.r', '-c', '--g', ':k', '-.aqua']
+    plt.gca().set_color_cycle(['blue', 'yellow', 'red', 'aqua', 'cyan', 'black'])
+    ls = ['-', '--', ':', '-.', '-', '--', ':', '-.']
     for a in x_arr:
         x = x_arr[i]
         y = y_arr[i]
@@ -410,7 +454,12 @@ def plot_n_TimeSeries(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewi
         plt.title(title).set_fontsize(fontsize + 2)
 
     if legend != None:
-        plt.legend(legend);
+        leg = plt.legend(legend)
+
+        # set the linewidth of each legend object
+        for legobj in leg.legendHandles:
+            legobj.set_linewidth(3.0)
+
     # rotates and right aligns the x labels, and moves the bottom of the
     # axes up to make room for them
     plt.xticks(fontsize = fontsize - 4)

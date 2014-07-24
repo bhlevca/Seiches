@@ -11,15 +11,19 @@ import FFTSpectralAnalysis
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
+# @staticmethod
+def plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq, ci, num_segments = 1, \
+                                               funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
+    plotSingleSideSpectrumFreqMultiple(lake_name, bay_names, data, freq, ci, type = 'amplitude', num_segments = num_segments, \
+                                               funits = funits, y_label = ylabel, title = title, log = log, fontsize = fontsize, tunits = tunits)
+
 
  # @staticmethod
-def plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq, ci, num_segments = 1, \
+def plotSingleSideSpectrumFreqMultiple(lake_name, bay_names, data, freq, ci = None, type = 'power', num_segments = 1, \
                                                funits = "Hz", y_label = None, title = None, log = False, fontsize = 20, tunits = None):
 
     # Plot single - sided amplitude spectrum.
-    if title == None:
-        title = 'Single-Sided Amplitude spectrum vs freq'
-    else:
+    if title != None:
         title = title + " - Single-Sided Amplitude"
 
     if funits == 'Hz':
@@ -30,7 +34,10 @@ def plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq,
     # end if
 
     if y_label == None:
-        ylabel = '|Z(t)| (m)'
+        if type == "power":
+            ylabel = "Spectral density [m$^2$/Hz]"
+        else:
+            ylabel = 'Z(t) [m]'
     else :
         ylabel = y_label
 
@@ -55,7 +62,7 @@ def plotSingleSideAplitudeSpectrumFreqMultiple(lake_name, bay_names, data, freq,
 
         XA.append(f)
         YA.append(sSeries)
-        if num_segments != 1:
+        if num_segments != 1 and ci != None:
             ci05.append(ci[0][j])
             ci95.append(ci[1][j])
     # end
@@ -113,13 +120,16 @@ class FFTGraphs(object):
         self.window = None
     # end
 
-    def doSpectralAnalysis(self, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False):
+    def doSpectralAnalysis(self, showOrig, draw, tunits = 'sec', window = 'hanning', num_segments = 1, filter = None, log = False, date1st = False):
 
         self.num_segments = num_segments
         self.window = window
 
         if self.filename != None:
-            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = self.fftsa.FourierAnalysis(self.filename, showOrig, tunits, window, num_segments, filter, log)
+            [self.y, self.Time, self.fftx, self.NumUniquePts, self.mx, self.f, self.power, self.x05, self.x95] = \
+            self.fftsa.FourierAnalysis(self.filename, showOrig, tunits = tunits, window = window, num_segments = num_segments, \
+                                       filter = filter, log = log , bResample = False, Time1 = None, date1st = date1st)
+
             if self.filename1 != None:
 
                 [self.y1, self.Time1, self.fftx1, self.NumUniquePts1, self.mx1, self.f1, self.power1, self.x05_1, self.x95_1] = \
@@ -240,7 +250,7 @@ class FFTGraphs(object):
             # end
             if graph:
                 if self.num_segments == 1:
-                    fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend, log, plottitle, ymax_lim = ymax)
+                    fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend = legend, log = log, plottitle = plottitle, ymax_lim = ymax)
                 else:
                     fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
                                                     log = log, fontsize = fontsize, plottitle = plottitle, grid = grid, ymax_lim = ymax)
@@ -279,7 +289,7 @@ class FFTGraphs(object):
 
         if self.filename1 != None and self.num_segments == 1:
             sSeries1 = fft_utils.smoothSeries(self.power1, 5)
-        else :
+        elif self.filename1 != None:
             sSeries1 = self.power1
             # for power density the confidence interval calculationw are not good as they are for amplitude. NEED to RECALCULATE
             (self.x05_1, self.x95_1) = self.compute_CI(np.abs(self.power1), 0.95, log)
