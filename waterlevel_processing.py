@@ -391,7 +391,7 @@ class WaterLevelAnalysis(object):
 
 if __name__ == '__main__':
     path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/WL/csv_press_corr'
-    filenames = {'Emb A':'10279443_cor.csv',
+    filenames = {'Emb A':'10279443_corr.csv',
                  'Emb B':'1115681_corr.csv',
                  'Emb C':'10238147_corr.csv',
                  'Cell 1':'10279696_corr.csv',

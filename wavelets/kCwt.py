@@ -482,7 +482,8 @@ class kCwt(object):
         plt.show()
 
 
-    def plotSpectrogram(self, ylabel_ts, units_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2, raw = False, title = False, powerimg = True):
+    def plotSpectrogram(self, ylabel_ts, units_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2, \
+                        raw = False, title = False, powerimg = True, bcolbar = False):
         '''
          The following routines plot the results in four different subplots containing:
          - the original series,
@@ -492,15 +493,18 @@ class kCwt(object):
          In all sub-plots the significance levels are either includesuggested by Torrence and Compo (1998)
          using the wavelet module.
 
-          @param ylablel_ts: label on the y axis on the data plot a) - string
-          @param units_ts: units name for Y axis
-          @param xlabel_sc: label to be placed on the X axis om the scalogram b) - string
-          @param ylabel_sc: label to be placed on the Y axis om the scalogram b) - string
-          @param sx_type: 'period' or 'freq' - creates the y axis on scalogram as scales/period or frequency
-          @param x_type: 'date' will format the X axis as a date, 'time' will use regular numbers for time sequence
-          @param val1: Range of sc_type (ex periods) to plot in scalogram
-          @param val2: Range of sc_type (ex periods) to plot in scalogram
-
+          :param ylablel_ts: label on the y axis on the data plot a) - string
+          :param units_ts: units name for Y axis
+          :param xlabel_sc: label to be placed on the X axis om the scalogram b) - string
+          :param ylabel_sc: label to be placed on the Y axis om the scalogram b) - string
+          :param sx_type: 'period' or 'freq' - creates the y axis on scalogram as scales/period or frequency
+          :param x_type: 'date' will format the X axis as a date, 'time' will use regular numbers for time sequence
+          :param val1: Range of sc_type (ex periods) to plot in scalogram
+          :param val2: Range of sc_type (ex periods) to plot in scalogram
+          :param raw: True/False,
+          :param title : True/False -- whether to prin the title
+          :param powerimg: True/False -- whether to display the power images instead of wavelet  (only for roatery)
+          :param bcolbar: True/False - whether to draw the color bar
           @return: None
 
         '''
@@ -617,7 +621,8 @@ class kCwt(object):
 
 
         # for testing only
-        fig.colorbar(im)  # - if present it will shift the scales
+        if bcolbar:
+            fig.colorbar(im)  # - if present it will shift the scales
         if title:
             if raw:
                 bx.set_title('(b) Wavelet Power Spectrum (%s)' % (self.mother.name))
