@@ -11,6 +11,7 @@ from matplotlib.dates import date2num, num2date
 from matplotlib.dates import MONDAY, SATURDAY
 import matplotlib.mlab
 import matplotlib.dates
+import matplotlib.transforms as mtransforms
 import numpy as np
 import scipy as sp
 import scipy.signal
@@ -227,24 +228,46 @@ def plotArray(title, xlabel, ylabel, x, y, legend = None, linewidth = 0.6, plott
         plt.show()
     # end
 
+
+def autoscale_based_on(ax, vertices):
+    # ax.dataLim = mtransforms.Bbox.unit()
+    # for line in lines:
+    #    xy = np.vstack(line.get_data()).T
+    #    ax.dataLim.update_from_data_xy(xy, ignore = False)
+    vertices = np.array(vertices)
+    ax.dataLim.update_from_data_xy(vertices, ignore = False)
+    ax.autoscale_view()
+
+
 def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth = 0.6, ymax_lim = None, log = False, \
                  plottitle = False, grid = False, fontsize = 18, noshow = False):
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
+    lines = []
     ax = fig.add_subplot(111)
 
     i = 0;
     ls = ['-', '--', ':', '-.', '-', '--', ':', '-.']
+    minx = 1e10
+    maxx = 0
+    miny = 1e10
+    maxy = 0
     for a in x_arr:
         x = x_arr[i]
         y = y_arr[i]
+        maxx = np.max(x)
+        minx = np.min(x)
+        maxy = np.max(y)
+        miny = np.min(y)
+
         if log:
-            ax.loglog(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i, basex = 10)
+            line = ax.loglog(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i, basex = 10)
         else:
-            ax.plot(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i)
+            line = ax.plot(x, y, linestyle = ls[i], linewidth = 1.2 + 0.4 * i)
+        lines.append(line)
         i += 1
     # end for
-
+    vertices = [(minx, miny), (maxx, maxy)]
     # ax.xaxis.grid(True, 'major')
     ax.xaxis.grid(True, 'minor')
     ax.grid(grid)
@@ -259,6 +282,8 @@ def plot_n_Array(title, xlabel, ylabel, x_arr, y_arr, legend = None, linewidth =
     # axes up to make room fornumpy smoothing filter them
     if ymax_lim != None:
         plt.ylim(ymax = ymax_lim)
+    else:
+        autoscale_based_on(ax, vertices)
     if not noshow:
         plt.show()
     return ax
@@ -281,7 +306,7 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
     fig = plt.figure(facecolor = 'w', edgecolor = 'k')
 
     ax = fig.add_subplot(111)
-
+    lines = []
     i = 0
     lst = ['-', '--', '-.', ':', '-', '--', ':', '-.']
     lst = ['-', '-', '-', '-', '-', '-', '-', '-']
@@ -296,13 +321,14 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
 
 
         if log:
-            ax.loglog(x, y, linestyle = lst[i], linewidth = lwt, basex = 10, color = colors[i])
+            line = ax.loglog(x, y, linestyle = lst[i], linewidth = lwt, basex = 10, color = colors[i])
             ax.set_yscale('log')
             # ax.semilogx(x, y, linestyle = lst[i], linewidth = lwt, color = colors[i])
 
         else:
-            ax.plot(x, y, linestyle = lst[i], linewidth = lwt, color = colors[i])
+            line = ax.plot(x, y, linestyle = lst[i], linewidth = lwt, color = colors[i])
 
+        lines.append(line)
         i += 1
     # end for
 
@@ -318,6 +344,8 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
             arry = hasattr(a, "__len__")
             x = x_arr[i][3:]
             y = y_arr[i][3:]
+            Xmax = np.max(x)
+            Xmin = np.min(x)
             if log :
                 if xc == 0:
                     if arry:
@@ -328,10 +356,10 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
                     xc = -1
                 y1 = ci05[0]
                 y2 = ci95[0]
-                ymx = max(y)
+                ymax = max(y)
                 ymin = min(y)
 
-                y0 = ymx * 0.35
+                y0 = ymax * 0.35
                 # Choose a locatioon for the CI bar
 
                 if xc != -1:
@@ -343,20 +371,24 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
                         ax.annotate("95%", (xc * 1.1, y0), ha = 'left', va = 'center', bbox = dict(fc = 'white', ec = 'none'))
                 # end if
 
-                Ymin = min(Ymin, ymin)
-                Ymax = max(Ymax, ymx)
+                Ymin = np.min(np.min(Ymin), np.min(ymin))
+                Ymax = np.max(np.max(Ymax), np.max(ymax))
             else:
                 y1 = ci05[i][3:]
                 y2 = ci95[i][3:]
                 sd = 0.65 - i * 0.15
-
-                ax.plot(x, y1, x, y2, color = [sd, sd, sd], alpha = 0.0)
+                ymax = np.max(np.max(y1), np.max(y2))
+                ymin = np.min(np.min(y1), np.min(y2))
+                Ymin = min(np.min(Ymin), np.min(ymin))
+                Ymax = max(np.max(Ymax), np.max(ymax))
+                line = ax.plot(x, y1, x, y2, color = [sd, sd, sd], alpha = 0.0)
+                lines.append(line)
                 ax.fill_between(x, y1, y2, where = y2 > y1, facecolor = [sd, sd, sd], alpha = 1, interpolate = True, linewidth = 0.0)
             i += 1
     # end if len(ci)
 
     # ax.xaxis.grid(True, 'major')
-
+    vertices = [(Xmin, Ymin), (Xmax, Ymax)]
     ax.xaxis.grid(grid, 'minor')
     ax.yaxis.grid(grid, 'minor')
     plt.setp(ax.get_xticklabels(), visible = True, fontsize = fontsize - 6)
@@ -371,10 +403,13 @@ def plot_n_Array_with_CI(title, xlabel, ylabel, x_arr, y_arr, ci05, ci95, legend
         plt.legend(legend);
     # rotates and right aligns the x labels, and moves the bottom of the
     # axes up to make room fornumpy smoothing filter them
-    if ymax_lim != None:
+    if ymax_lim != None and log == False:
         plt.ylim(ymax = ymax_lim)
-    if log:
-        plt.ylim(ymin = Ymin * 0.85, ymax = Ymax * 1.15)
+    else:
+        if log:
+            plt.ylim(ymin = Ymin * 0.85, ymax = Ymax * 1.15)
+        else:
+            autoscale_based_on(ax, vertices)
 
 
     plt.show()
