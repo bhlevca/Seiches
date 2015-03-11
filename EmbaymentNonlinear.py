@@ -6,7 +6,6 @@ Created on Jun 11, 2012
 import fft.FFTGraphs as FFTGraphs
 import fft.fft_utils as fft_utils
 import fft.Filter as Filter
-import wavelets.Graphs
 import wavelets.kCwt
 import scipy as sp
 import numpy as np

@@ -6,9 +6,7 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy.interpolate import interp1d
-
-sys.path.insert(0, '/software/SAGEwork/Pressure_analysis')
-import utils.stats as ustats
+import utools.stats as ustats
 
 #############
 # constants

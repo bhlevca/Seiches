@@ -10,8 +10,7 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 import csv, sys
 
-sys.path.insert(0, '/software/SAGEwork/Pressure_analysis')
-import utils.stats as ustats
+import utools.stats as ustats
 
 def readFile(path_in, fname):
     # read Lake data

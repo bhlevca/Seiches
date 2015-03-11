@@ -6,7 +6,6 @@ Created on Jun 11, 2012
 import fft.FFTGraphs as FFTGraphs
 import fft.fft_utils as fft_utils
 import fft.Filter as Filter
-import wavelets.Graphs
 import wavelets.kCwt
 import scipy as sp
 import numpy as np
@@ -20,7 +19,7 @@ path = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Lak
 path1 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Data-long/FMB'
 path2 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Data-long/LOntario'
 path3 = '/software/software/scientific/Matlab_files/Helmoltz/Embayments-Exact/Toronto_Harbour'
-path4 = '/home/bogdan/Documents/UofT/PhD/Data_Files/Toberymory_tides'
+path4 = '/home/bogdan/Documents/UofT/PhD/Data_Files/2010/Toberymory_tides'
 path5 = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Station-13320-Apr-09-2013/csv_processed'
 path6 = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/WL/csv_processed/'
 
@@ -359,40 +358,42 @@ class Embayment(object):
             fftsa.plotCospectralDensity(log = log)
             # fftsa.plotPhase()
 
-            if b_wavelets:
-                # Wavelet Spectral analysis
-                if bay == 'FMB':
-                    graph = wavelets.Graphs.Graphs(path, 'Lake_Ontario_1115682_processed.csv', 'Inner_Harbour_July_processed.csv', show)
-                elif bay == 'BUR':
-                    graph = wavelets.Graphs.Graphs(path, 'LO_Burlington-JAN-DEC-2011_date.csv', None, show)
-                    # graph = wavelets.Graphs.Graphs(path, 'LO_Burlington-Apr26-Apr28-2011.csv', None, show)
-                elif bay == 'Tob-OBP':
-                    graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL2.csv', show)
-                    # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL2-28jul2010.csv', show)
-                elif bay == 'Tob-IBP':
-                    graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL1.csv', show)
-                    # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL1-28jul2010.csv', show)
-                # Fathom Five National Park Cove Island Harbour
-                elif bay == 'Tob-CIH':
-                    graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL4.csv', show)
-                    # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL4-28jul2010.csv', show)
-                elif bay == 'Tob-HI':
-                    graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL3.csv', show)
-                    # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL3-28jul2010.csv', show)
-                # Embayment A Tommy Thomson Park
-                elif bay == 'Emb-A' or bay == 'Emb-B' or bay == 'Emb-C' or bay == 'Cell-1' or bay == 'Cell-2' or bay == 'Cell-3':
-                    # graph = wavelets.Graphs.Graphs(path3, 'Stn_18_10279444.csv', 'Emb_A_10279443.csv', show)
-                    graph = wavelets.Graphs.Graphs(path3, filenames[1], filenames[0], show)
-                else:
-                    print "Unknown embayment"
-                    exit(1)
-
-                graph.doSpectralAnalysis()
-                graph.plotDateScalogram(scaleType = 'log', plotFreq = True, printtitle = Embayment.printtitle)
-                graph.plotSingleSideAplitudeSpectrumTime(printtitle = Embayment.printtitle)
-                graph.plotSingleSideAplitudeSpectrumFreq(printtitle = Embayment.printtitle)
-                graph.showGraph()
-            # nd if b_wavelets
+#===============================================================================
+#             if b_wavelets:
+#                 # Wavelet Spectral analysis
+#                 if bay == 'FMB':
+#                     graph = wavelets.Graphs.Graphs(path, 'Lake_Ontario_1115682_processed.csv', 'Inner_Harbour_July_processed.csv', show)
+#                 elif bay == 'BUR':
+#                     graph = wavelets.Graphs.Graphs(path, 'LO_Burlington-JAN-DEC-2011_date.csv', None, show)
+#                     # graph = wavelets.Graphs.Graphs(path, 'LO_Burlington-Apr26-Apr28-2011.csv', None, show)
+#                 elif bay == 'Tob-OBP':
+#                     graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL2.csv', show)
+#                     # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL2-28jul2010.csv', show)
+#                 elif bay == 'Tob-IBP':
+#                     graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL1.csv', show)
+#                     # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL1-28jul2010.csv', show)
+#                 # Fathom Five National Park Cove Island Harbour
+#                 elif bay == 'Tob-CIH':
+#                     graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL4.csv', show)
+#                     # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL4-28jul2010.csv', show)
+#                 elif bay == 'Tob-HI':
+#                     graph = wavelets.Graphs.Graphs(path4, 'LL3.csv', 'LL3.csv', show)
+#                     # graph = wavelets.Graphs.Graphs(path4, 'LL3-28jul2010.csv', 'LL3-28jul2010.csv', show)
+#                 # Embayment A Tommy Thomson Park
+#                 elif bay == 'Emb-A' or bay == 'Emb-B' or bay == 'Emb-C' or bay == 'Cell-1' or bay == 'Cell-2' or bay == 'Cell-3':
+#                     # graph = wavelets.Graphs.Graphs(path3, 'Stn_18_10279444.csv', 'Emb_A_10279443.csv', show)
+#                     graph = wavelets.Graphs.Graphs(path3, filenames[1], filenames[0], show)
+#                 else:
+#                     print "Unknown embayment"
+#                     exit(1)
+# 
+#                 graph.doSpectralAnalysis()
+#                 graph.plotDateScalogram(scaleType = 'log', plotFreq = True, printtitle = Embayment.printtitle)
+#                 graph.plotSingleSideAplitudeSpectrumTime(printtitle = Embayment.printtitle)
+#                 graph.plotSingleSideAplitudeSpectrumFreq(printtitle = Embayment.printtitle)
+#                 graph.showGraph()
+#             # nd if b_wavelets
+#===============================================================================
     # end SpectralAnalysis
 
     @staticmethod
@@ -468,8 +469,8 @@ class Embayment(object):
         J = -1  # 7 / dj                      # Seven powers of two with dj sub-octaves
         alpha = 0.5  # Lag-1 autocorrelation for white noise
 
-        [wave, scales, freq, coi, fft, fftfreqs, iwave, power, fft_power, amplitude, phase] = \
-            kwavelet.doSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
+        # [wave, scales, freq, coi, fft, fftfreqs, iwave, power, fft_power, amplitude, phase] = \
+        kwavelet.doSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
         if debug:
             print "fftfreq=", fftfreqs
             print "amplit=", amplitude
@@ -479,15 +480,15 @@ class Embayment(object):
         ylabel_ts = "amplitude"
         yunits_ts = 'm'
         xlabel_sc = ""
-        ylabel_sc = 'Period (%s)' % kwavelet.tunits
+        ylabel_sc = 'Period (%s)' % kwavelet.wpar1.tunits
         # ylabel_sc = 'Freq (Hz)'
         sc_type = "period"
         # sc_type = "freq"
         # x_type = 'date'
         x_type = 'dayofyear'
-        kwavelet.plotSpectrogram(ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
+        kwavelet.plotSpectrogram(kwavelet.wpar1, ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
         ylabel_sc = 'Frequency ($s^{-1}$)'
-        kwavelet.plotAmplitudeSpectrogram(ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
+        # kwavelet.plotAmplitudeSpectrogram(kwavelet.wpar1, ylabel_ts, yunits_ts, xlabel_sc, ylabel_sc, sc_type, x_type, val1, val2)
 
     def EmbaymentFlow(self, A, HbVect, dt):
         '''
@@ -773,6 +774,8 @@ class Embayment(object):
 
 
 if __name__ == '__main__':
+    "options -n 4 -m -f"
+
     bay = 'Emb-A'
     bay = 'Emb-B'
     bay = 'Emb-C'
