@@ -129,8 +129,12 @@ def plot_point_Array(title, xlabel, ylabel, x_arr, y_arr, p_arr, legend = None, 
 
 
     [r2, slope, intercept, r_value, p_value, std_err] = ustats.rsquared(x_arr, y_arr)
-
-    if estimate != None and xmin_lim != None and xmax_lim != None:
+    # Not working residuals = ustats.residuals(x_arr, y_arr)
+    print "R2=%f, p value=%f" % (r2, p_value)
+    #personal adjustments
+    intercept = 0.18
+    slope = 0.032
+    if estimate == True and xmin_lim != None and xmax_lim != None:
         eps = 0.000001
         t = np.linspace(xmin_lim + eps, 0.3, 100)
         xl = np.array(t);
@@ -140,8 +144,11 @@ def plot_point_Array(title, xlabel, ylabel, x_arr, y_arr, p_arr, legend = None, 
 
     x = np.linspace(0, xmax, 100)
     y = slope * x + intercept
-    ax.plot(x, y, '-.b', lw = 3)
+    ax.plot(x, y, '-.b', lw = 3, color='red')
 
+    ax2= fig.add_subplot(111)
+    ax2.plot(x, residuals)
+    
     plt.draw()
     plt.show()
 # end
@@ -154,6 +161,6 @@ if __name__ == '__main__':
     [MouthArea, RelativeAmplit, Name, Area] = readFile(path, filename)
     title = "Lake Superior embayments. Relative amplification vs. mouth area"
     ylabel = "Relative Amplitude (bay/lake)"
-    xlabel = "Mouth Area m$^2$"
+    xlabel = "Mouth area ($m^2$)"
     plot_point_Array(title, xlabel, ylabel, MouthArea, RelativeAmplit, Area, legend = ["Lake Superior Embayments (ha)"], linewidth = 0.6, ymax_lim = 2.0, ymin_lim = 0,
-                     annotate = True, log = 'logx' , hline = 1, xmax_lim = 80, xmin_lim = 0, settitle = False, estimate = True)
+                     annotate = True, log = 'logx' , hline = 1, xmax_lim = 80, xmin_lim = 0, settitle = False, estimate = False)
