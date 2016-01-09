@@ -3,9 +3,9 @@ Created on Jun 11, 2012
 
 @author: bogdan
 '''
-import fft.FFTGraphs as FFTGraphs
-import fft.fft_utils as fft_utils
-import fft.Filter as Filter
+import ufft.FFTGraphs as FFTGraphs
+import ufft.fft_utils as fft_utils
+import ufft.Filter as Filter
 import wavelets.kCwt
 import scipy as sp
 import numpy as np
