@@ -247,13 +247,13 @@ class EmbaymentPlot(object):
                 self.Fa[i] = self.k[i] * self.Amplitude[i]  # the forcing function
                 self.phy[i] = np.arccos((1 - (self.w[i] / self.w0) ** 2) * bay_ampl / self.Amplitude[i])
                 self.tsup[i] = self.phy[i] / self.w[i]  # suplementary period due to phase lag
-                print "*********************************"
-                print 'embayment amplitude=', bay_ampl
-                print 'phase =%f ' % (self.phy[i])
-                print 'response frequency=%f (Hz), angular freq = %f (rad) period= %f (h)' % (freq, self.w[i], 1 / freq / 3600)
+                #print "*********************************"
+                #print 'embayment amplitude=', bay_ampl
+                #print 'phase =%f ' % (self.phy[i])
+                #print 'response frequency=%f (Hz), angular freq = %f (rad) period= %f (h)' % (freq, self.w[i], 1 / freq / 3600)
                 maxampl = self.max_amplification(self.Amplitude[i], n0)
-                print 'embayment max amplit for T=%f (hours) Amplit = %f (m)  Max Ampl = %f (m)' % (self.Period[i], self.Amplitude[i], maxampl)
-                print ''
+                #print 'embayment max amplit for T=%f (hours) Amplit = %f (m)  Max Ampl = %f (m)' % (self.Period[i], self.Amplitude[i], maxampl)
+                #print ''
                 R += self.X[i]
             # end for
             return [t, self.X, self.c, self.k, self.w, x0, v0, R]
@@ -870,7 +870,7 @@ class EmbaymentPlot(object):
         for key, value in embayments.iteritems():
 
             name = key
-            print "embayment: %s" % name
+            #print "embayment: %s" % name
 
             if bbox:
                 bbox_props = dict(boxstyle = "square,pad=0.3", fc = "white", ec = "b", lw = 1)
@@ -904,7 +904,7 @@ class EmbaymentPlot(object):
 
                 # measured forcing
                 ratioMeas[k] = DAmplBay / DAmplE
-                print "%d) rmeas:%f" % (k, ratioMeas[k]),
+                #print "%d) rmeas:%f" % (k, ratioMeas[k]),
                 plt.plot(wp, ratioMeas[k], marker = marker[i], markersize = 13)
                 txt = '%s_M(%.2f h)' % (name, T)
                 plt.text(wp + 0.02, ratioMeas[k], txt, ha = 'left', va = 'center', bbox = bbox_props, fontsize = 15)
@@ -915,7 +915,7 @@ class EmbaymentPlot(object):
                 # calculated forcing
                 DCalcAmplBay = self.dl_amplitudef(DAmplE, wp)
                 ratioCalc[k] = DCalcAmplBay / DAmplE
-                print "  rcalc:%f" % ratioCalc[k]
+                #print "  rcalc:%f" % ratioCalc[k]
                 plt.plot(wp, ratioCalc[k], marker = marker[i], markersize = 13)
                 txt = '%s_C(%.2f h)' % (name, T)
                 plt.text(wp + 0.02, ratioCalc[k], txt, ha = 'left', va = 'center', bbox = bbox_props, fontsize = 15)

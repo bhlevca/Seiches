@@ -5,12 +5,12 @@ Created on Jun 11, 2012
 '''
 import ufft.FFTGraphs as FFTGraphs
 import ufft.fft_utils as fft_utils
-import ufft.Filter as Filter
+#import ufft.Filter as Filter
 import wavelets.kCwt
 import scipy as sp
 import numpy as np
 import math
-import matplotlib.mlab as mlab
+#import matplotlib.mlab as mlab
 import EmbaymentPlot
 import EmbaymentNonlinear
 from optparse import OptionParser
@@ -31,13 +31,15 @@ embayments = {
                         'Phase':[5, 22, -15, 39, -4.6, -3.0],  # rad
                         'CD':0.0032,
                         'filename':path + '/Inner_Harbour_July_processed.csv'},
-              'Emb-A' : {'A':70000., 'B':79. , 'H':2., 'L':83., 'LL':365, 'h':2.5, 'BB':225,
-                        'Period':[12.4, 5.2, 1.28, 0.8, 0.5, 0.36] ,  # h
-                        'Amplitude':[0.034, 0.022, 0.017, 0.023, 0.021, 0.022],  # m
-                        'Amplitude_bay':[0.024, 0.02, 0.014, 0.012, 0.0045, 0.002],  # m
-                        'Phase':[5, 22, -15, 39, -4.6, -3.0],  # rad
+              #'Emb-Ah' : {'A':70000., 'B':120. , 'H':6, 'L':30., 'LL':365, 'h':2.5, 'BB':225, #L was 83
+              #'Emb-Al' : {'A':70000., 'B':20. , 'H':1, 'L':190., 'LL':365, 'h':2.5, 'BB':225, #L was 83
+              'Emb-A' : {'A':70000., 'B':75. , 'H':4, 'L':120., 'LL':365, 'h':2.5, 'BB':225, #L was 83
+                        'Period':[12.4, 5.2, 1.28, 0.8, 0.5, 0.36, 0.2] ,  # h
+                        'Amplitude':[0.034, 0.022, 0.017, 0.023, 0.021, 0.022, 0.005],  # m
+                        'Amplitude_bay':[0.024, 0.02, 0.024, 0.012, 0.0045, 0.002, 0.021],  # m
+                        'Phase':[5, 22, -15, 39, -4.6, -3.0, 39],  # rad
                         'CD':0.0032,
-                        'filename':path + '/Inner_Harbour_July_processed.csv'},
+                        'filename':path6 + '/10279443_corr.csv'} ,#'/Inner_Harbour_July_processed.csv'},
               'Tob-IBP-ex' : {'A':150000., 'B':140. , 'H':2.143, 'L':570., 'LL':1000, 'h':1.5, 'BB':100,
                        'Period':[16.8 / 60, 15.8 / 60, 12.0 / 60, 8.0 / 60, 5.35 / 60, 4.5 / 60] ,  # h
                        'Amplitude':[0.02, 0.02, 0.018, 0.016, 0.015, 0.018],  # m
@@ -70,7 +72,7 @@ embayments = {
                        'Amplitude_bay':[0.025, 0.078, 0.037],  # m
                        'Phase':[0, 0, 0],  # rad
                        'CD':0.0032,
-                       'filename':path5 + '/13320-07-APR-2013_slev.csv'},
+                       'filename':path5 + '/10279444_corr.csv'}, #'/13320-07-APR-2013_slev.csv'},
 
               }
 
@@ -324,9 +326,8 @@ class Embayment(object):
                 print "Period %f  phase:%f  amplit:%f" % (1. / freq[i] / 3600, phase[i], mx[i])
             print "*****************************"
 
-            fftsa.plotLakeLevels(lake_name, bay_name, detrend, Embayment.printtitle, doy = doy, grid = grid)
-
-
+            fftsa.plotLakeLevels(lake_name, bay_name, detrend, y_label=None, title=None, plottitle=Embayment.printtitle, doy = doy, grid = grid)
+                               
             if bay == 'Tob-OBP' :  # to have the same scale as IBP
                 ymax = 0.14
             else:
@@ -459,7 +460,7 @@ class Embayment(object):
             # ppath = path3
             # file = '1115865-Station16-Gate-date.csv'
             ppath = path6 + bay
-            file = fimenames[1]
+            file = filenames[1]
         else:
             print "Unknown embayment"
             exit(1)
@@ -540,8 +541,13 @@ class Embayment(object):
                 Vm = Vm + (Qm[i] + Qm[i - 1]) / 2 * self.B * self.H
             # end
         # end
-
-        print "V meas=%f Sum meas=%f" % (Vm, summeas)
+        QWL=0
+        dt=(Time[2] - Time[1])* 86400
+        for i in range(0, len(Qm) - 1):
+            QWL = QWL + self.A * 0.5*(SensorDepth[i] - SensorDepth[i - 1]) / dt
+        QWL=abs(QWL)
+        
+        print "V meas=%f Sum meas=%f QWL=%f" % (Vm, summeas, QWL)
         Qp = self.EmbaymentFlow(self.A, R, (t[2] - t[1]))
 
         Vp = 0
@@ -552,8 +558,13 @@ class Embayment(object):
                 Vp = Vp + (Qp[i] + Qp[i - 1]) / 2 * self.B * self.H
             # end
         # end
+        QWL=0
+        for i in range(0, len(Qp) - 1):
+            QWL = QWL + self.A * 0.5*(R[i] - R[i - 1]) / dt
+        QWL=abs(QWL)
 
-        print "V pred=%f, Sum pred=%f" % (Vp, sumpred)
+        print "V pred=%f, Sum pred=%f QWL=%f" % (Vp, sumpred, QWL)
+
         if self.name == 'Tob-IBP':
             Vm_max = np.max(Qm) / (self.B * self.H / 2)
             Vp_max = np.max(Qp) / (self.B * self.H / 2)
@@ -561,7 +572,8 @@ class Embayment(object):
             Vm_max = np.max(Qm) / (self.B * self.H)
             Vp_max = np.max(Qp) / (self.B * self.H)
         # endif
-        print "Bay=%s  Qm=%f m/s, Qp=%f m/s" % (self.name , Vm_max, Vp_max)
+        print "Bay=%s  Vm=%f m/s, Vp=%f m/s" % (self.name , Vm_max, Vp_max)
+        print "Bay=%s  Qm=%f m^3/s, Qp=%f m^3/s" % (self.name, np.max(Qm), np.max(Qp))
     # end CalculateFlow
 
     @staticmethod
@@ -572,7 +584,7 @@ class Embayment(object):
         num_segments = int(numseg)
         doSpectral = True
         dowavelets = False  # Scipy
-        doWavelet = True  # Terrence & Compo
+        doWavelet =  False  #True  # Terrence & Compo
         doHarmonic = False
         doFiltering = False
         tunits = 'day'  # can be 'sec', 'hour'
@@ -613,7 +625,7 @@ class Embayment(object):
                 filter = None
 
             if doSpectral:
-                Embayment.SpectralAnalysis(bay, filenamses, names, dowavelets, window, num_segments, \
+                Embayment.SpectralAnalysis(bay, filenames, names, dowavelets, window, num_segments, \
                                            tunits = tunits, funits = funits, filter = filter, log = log, doy = doy, grid = grid, fname = None, domodel = domodel)
 
 
@@ -733,7 +745,7 @@ class Embayment(object):
             ftype = 'fft'
             # ftype = 'butter' THIS DOES NOT WORK PROPERLY for the random signal we have here
             if doFiltering:
-                filter = [lowcuEmbaymentBtoff, highcutoff]  # Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
+                filter = [lowcutoff, highcutoff]  # Filter.Filter(doFiltering, lowcutoff, highcutoff, btype)
             else:
                 filter = None
 
@@ -777,16 +789,16 @@ if __name__ == '__main__':
     "options -n 4 -m -f"
 
     bay = 'Emb-A'
-    bay = 'Emb-B'
-    bay = 'Emb-C'
-    bay = 'Cell-1'
+    #bay = 'Emb-B'
+    #bay = 'Emb-C'
+    #bay = 'Cell-1'
     # bay = 'Cell-2'
     # bay = 'Cell-3'
-    bay = 'FMB'
+    #bay = 'FMB'
     # bay = 'BUR'
     # bay = 'Tob-OBP'
-    bay = 'Tob-IBP'
-    bay = 'Tob-CIH'
+    #bay = 'Tob-IBP'
+    #bay = 'Tob-CIH'
     # bay = 'Tob_All'
     # bay = 'Tob-HI'
     # bay = 'L-SUP'
